@@ -1,7 +1,6 @@
 package com.ttukttak.week.application;
 
 import com.ttukttak.domain.submission.application.query.SubmissionQueryService;
-import com.ttukttak.domain.submission.exception.AlreadySubmittedException;
 import com.ttukttak.domain.week.application.command.WeekCommandService;
 import com.ttukttak.domain.week.application.query.WeekQueryService;
 import com.ttukttak.domain.week.domain.Week;
@@ -60,14 +59,8 @@ public class WeekFacade {
         return new ParticipationResponse(true, weekCommandService.join(userId, Instant.now()));
     }
 
-    /** 이미 제출했으면 참가를 취소할 수 없어요. */
     public ParticipationResponse leave(UUID userId) {
-        Instant now = Instant.now();
-        weekQueryService.current(now).flatMap(week -> submissionQueryService.find(week.getId(), userId))
-                .ifPresent(submission -> {
-                    throw new AlreadySubmittedException(submission.getId());
-                });
-        return new ParticipationResponse(false, weekCommandService.leave(userId, now));
+        return new ParticipationResponse(false, weekCommandService.leave(userId, Instant.now()));
     }
 
     public void importWeeks(ImportWeeksRequest request) {

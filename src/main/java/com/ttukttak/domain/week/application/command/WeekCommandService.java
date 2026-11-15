@@ -1,5 +1,7 @@
 package com.ttukttak.domain.week.application.command;
 
+import com.ttukttak.domain.submission.domain.SubmissionRepository;
+import com.ttukttak.domain.submission.exception.AlreadySubmittedException;
 import com.ttukttak.domain.week.domain.*;
 import com.ttukttak.domain.week.exception.WeekNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import java.util.UUID;
 public class WeekCommandService {
     private final WeekRepository weekRepository;
     private final ParticipationRepository participationRepository;
+    private final SubmissionRepository submissionRepository;
 
     /** id가 같으면 덮어써요. 버튼 누른 횟수는 덮어쓰지 않아요. 하나라도 틀리면 모두 취소돼요. */
     public void importWeeks(List<Week> weeks) {
@@ -36,9 +39,16 @@ public class WeekCommandService {
         return participationRepository.count(week.getId());
     }
 
+    /**
+     * 이미 제출했으면 취소할 수 없어요. 먼저 지우고(행 잠금) 나서 제출을 확인해요.
+     * 제출이 동시에 들어와도 둘 중 하나가 참가 행에서 기다리니 "제출했는데 참가 안 함"이 남지 않아요.
+     */
     public long leave(UUID userId, Instant now) {
         Week week = building(now);
         participationRepository.leave(week.getId(), userId);
+        submissionRepository.findByWeekIdAndUserId(week.getId(), userId).ifPresent(submission -> {
+            throw new AlreadySubmittedException(submission.getId());
+        });
         return participationRepository.count(week.getId());
     }
 
