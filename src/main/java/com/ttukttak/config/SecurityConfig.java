@@ -39,7 +39,7 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/error", "/swagger-ui/**", "/v3/api-docs/**", AUTH + "/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/users/**", "/api/v1/weeks/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/**", "/api/v1/weeks/**", "/api/v1/submissions/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/weeks/current/presses").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())

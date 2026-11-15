@@ -15,20 +15,19 @@ public record CurrentWeekResponse(Current week, Stats stats, NextWeek nextWeek, 
                           Examples examples, WeekSchedule schedule, Phase phase) {
     }
 
-    // ponytail: submissions는 제출작 도메인이 생기면 채워요.
     public record Stats(long participants, long submissions, long presses) {
     }
 
     public record NextWeek(String id, OffsetDateTime opensAt) {
     }
 
-    public static CurrentWeekResponse of(Week week, long participants, Week next, Instant now) {
+    public static CurrentWeekResponse of(Week week, long participants, long submissions, Week next, Instant now) {
         Current current = week == null ? null : new Current(week.getId(), week.getCode(), week.getType(),
                 week.getRound(), week.getTitle(), week.getAnnouncement(), week.getRule(), week.getConstraints(),
                 week.getDifficulty(), week.getExamples(), WeekSchedule.from(week), week.phase(now));
         return new CurrentWeekResponse(
                 current,
-                week == null ? null : new Stats(participants, 0, week.getPresses()),
+                week == null ? null : new Stats(participants, submissions, week.getPresses()),
                 next == null ? null : new NextWeek(next.getId(), WeekSchedule.kst(next.getOpensAt())),
                 WeekSchedule.kst(now));
     }
