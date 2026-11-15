@@ -1,5 +1,6 @@
 package com.ttukttak.domain.submission.application.command;
 
+import com.ttukttak.domain.feedback.domain.FeedbackRepository;
 import com.ttukttak.domain.submission.domain.Submission;
 import com.ttukttak.domain.submission.domain.SubmissionContent;
 import com.ttukttak.domain.submission.domain.SubmissionRepository;
@@ -27,6 +28,7 @@ public class SubmissionCommandService {
     private final WeekRepository weekRepository;
     private final ParticipationRepository participationRepository;
     private final VoteRepository voteRepository;
+    private final FeedbackRepository feedbackRepository;
 
     /** 제작 기간에 한 주 한 번. 참가하기를 안 눌렀어도 제출하면 참가로 쳐요. */
     public Submission submit(String weekId, UUID userId, SubmissionContent content, Instant now) {
@@ -46,10 +48,11 @@ public class SubmissionCommandService {
         return submissionRepository.save(submission);
     }
 
-    /** 받은 투표도 함께 지워요. */
+    /** 받은 투표와 피드백도 함께 지워요. */
     public void withdraw(UUID id, UUID userId, Instant now) {
         editable(id, userId, now);
         voteRepository.deleteBySubmissionId(id);
+        feedbackRepository.deleteBySubmissionId(id);
         submissionRepository.delete(id);
     }
 
@@ -57,7 +60,7 @@ public class SubmissionCommandService {
     // ponytail: 요청 제한(사용자당 분당 60회)은 아직 없어요.
     public long vote(UUID id, UUID userId, Instant now) {
         Submission submission = votable(id, now);
-        if (submission.isAuthor(userId)) throw new OwnSubmissionException();
+        if (submission.isAuthor(userId)) throw OwnSubmissionException.vote();
         voteRepository.vote(id, userId);
         return voteRepository.count(id);
     }
