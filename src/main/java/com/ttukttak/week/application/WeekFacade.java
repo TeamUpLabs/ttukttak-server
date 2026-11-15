@@ -1,5 +1,7 @@
 package com.ttukttak.week.application;
 
+import com.ttukttak.domain.submission.application.query.SubmissionQueryService;
+import com.ttukttak.domain.submission.exception.AlreadySubmittedException;
 import com.ttukttak.domain.week.application.command.WeekCommandService;
 import com.ttukttak.domain.week.application.query.WeekQueryService;
 import com.ttukttak.domain.week.domain.Week;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /** 요청·응답 DTO와 도메인 사이를 이어줘요. 트랜잭션은 각 서비스가 가져요. */
@@ -20,12 +23,14 @@ public class WeekFacade {
 
     private final WeekCommandService weekCommandService;
     private final WeekQueryService weekQueryService;
+    private final SubmissionQueryService submissionQueryService;
 
     public CurrentWeekResponse current() {
         Instant now = Instant.now();
         Week week = weekQueryService.current(now).orElse(null);
         long participants = week == null ? 0 : weekQueryService.participants(week.getId());
-        return CurrentWeekResponse.of(week, participants, weekQueryService.next(now).orElse(null), now);
+        long submissions = week == null ? 0 : submissions(week.getId());
+        return CurrentWeekResponse.of(week, participants, submissions, weekQueryService.next(now).orElse(null), now);
     }
 
     public WeekListResponse archive(String cursor, int limit) {
@@ -34,15 +39,16 @@ public class WeekFacade {
         List<Week> weeks = weekQueryService.archive(now, cursor, size);
         boolean hasNext = weeks.size() > size;
         List<Week> page = hasNext ? weeks.subList(0, size) : weeks;
+        Map<String, Long> counts = submissionQueryService.counts(page.stream().map(Week::getId).toList());
         return new WeekListResponse(
-                page.stream().map(week -> WeekSummary.from(week, now)).toList(),
+                page.stream().map(week -> WeekSummary.from(week, counts.getOrDefault(week.getId(), 0L), now)).toList(),
                 hasNext ? page.getLast().getId() : null);
     }
 
     public WeekDetailResponse get(String id) {
         Instant now = Instant.now();
         Week week = weekQueryService.get(id);
-        return WeekDetailResponse.of(week, weekQueryService.participants(id),
+        return WeekDetailResponse.of(week, weekQueryService.participants(id), submissions(id),
                 weekQueryService.prevTheme(id).orElse(null), weekQueryService.nextTheme(id).orElse(null), now);
     }
 
@@ -54,11 +60,21 @@ public class WeekFacade {
         return new ParticipationResponse(true, weekCommandService.join(userId, Instant.now()));
     }
 
+    /** 이미 제출했으면 참가를 취소할 수 없어요. */
     public ParticipationResponse leave(UUID userId) {
-        return new ParticipationResponse(false, weekCommandService.leave(userId, Instant.now()));
+        Instant now = Instant.now();
+        weekQueryService.current(now).flatMap(week -> submissionQueryService.find(week.getId(), userId))
+                .ifPresent(submission -> {
+                    throw new AlreadySubmittedException(submission.getId());
+                });
+        return new ParticipationResponse(false, weekCommandService.leave(userId, now));
     }
 
     public void importWeeks(ImportWeeksRequest request) {
         weekCommandService.importWeeks(request.toDomain());
+    }
+
+    private long submissions(String weekId) {
+        return submissionQueryService.count(weekId, null, null);
     }
 }

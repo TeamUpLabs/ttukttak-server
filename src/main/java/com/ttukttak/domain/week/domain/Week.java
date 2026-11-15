@@ -1,6 +1,7 @@
 package com.ttukttak.domain.week.domain;
 
 import com.ttukttak.domain.week.exception.InvalidWeekException;
+import com.ttukttak.domain.week.exception.WeekPhaseException;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -47,6 +48,13 @@ public class Week {
     /** 공개 전엔 주제를 숨겨요. */
     public boolean isOpen(Instant now) {
         return !now.isBefore(opensAt);
+    }
+
+    /** 참가·제출은 제작 기간에만 바꿀 수 있어요. */
+    public void requireBuilding(Instant now) {
+        Phase phase = phase(now);
+        if (phase == Phase.BREAK) throw WeekPhaseException.breakWeek();
+        if (phase != Phase.BUILDING) throw WeekPhaseException.submissionClosed();
     }
 
     /** 주제 주는 일정 4개가 순서대로 있어야 하고, 휴식 주는 회차·마감이 없어요. */

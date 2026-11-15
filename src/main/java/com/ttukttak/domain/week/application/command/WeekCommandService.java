@@ -2,7 +2,6 @@ package com.ttukttak.domain.week.application.command;
 
 import com.ttukttak.domain.week.domain.*;
 import com.ttukttak.domain.week.exception.WeekNotFoundException;
-import com.ttukttak.domain.week.exception.WeekPhaseException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,12 +42,9 @@ public class WeekCommandService {
         return participationRepository.count(week.getId());
     }
 
-    // 참가는 제작 기간에만 바꿀 수 있어요.
     private Week building(Instant now) {
         Week week = current(now);
-        Phase phase = week.phase(now);
-        if (phase == Phase.BREAK) throw WeekPhaseException.breakWeek();
-        if (phase != Phase.BUILDING) throw WeekPhaseException.submissionClosed();
+        week.requireBuilding(now);
         return week;
     }
 

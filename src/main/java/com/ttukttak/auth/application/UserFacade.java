@@ -3,6 +3,8 @@ package com.ttukttak.auth.application;
 import com.ttukttak.auth.presentation.request.UpdateUserRequest;
 import com.ttukttak.auth.presentation.response.MeResponse;
 import com.ttukttak.auth.presentation.response.UserResponse;
+import com.ttukttak.domain.submission.application.query.SubmissionQueryService;
+import com.ttukttak.domain.submission.domain.Submission;
 import com.ttukttak.domain.user.application.command.UserCommandService;
 import com.ttukttak.domain.user.application.query.UserQueryService;
 import com.ttukttak.domain.user.domain.User;
@@ -21,6 +23,7 @@ public class UserFacade {
     private final UserCommandService userCommandService;
     private final UserQueryService userQueryService;
     private final WeekQueryService weekQueryService;
+    private final SubmissionQueryService submissionQueryService;
 
     public UserResponse get(String handle) {
         return UserResponse.from(userQueryService.get(handle));
@@ -42,9 +45,12 @@ public class UserFacade {
     }
 
     private MeResponse me(User user) {
-        Week week = weekQueryService.current(Instant.now()).orElse(null);
-        return week == null
-                ? MeResponse.from(user, null, false)
-                : MeResponse.from(user, week.getId(), weekQueryService.isJoined(week.getId(), user.getId()));
+        Instant now = Instant.now();
+        Week week = weekQueryService.current(now).orElse(null);
+        if (week == null) return MeResponse.from(user, null);
+        UUID submissionId = submissionQueryService.find(week.getId(), user.getId()).map(Submission::getId).orElse(null);
+        return MeResponse.from(user, new MeResponse.CurrentWeek(week.getId(),
+                weekQueryService.isJoined(week.getId(), user.getId()), submissionId,
+                submissionQueryService.streak(user.getId(), now).current()));
     }
 }

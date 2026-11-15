@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -21,5 +23,10 @@ public class UserQueryService {
 
     public User get(UUID id) {
         return userRepository.findById(id).orElseThrow(UserNotFoundException::new);
+    }
+
+    /** 탈퇴한 사용자는 빠져요. */
+    public List<User> getAll(Collection<UUID> ids) {
+        return userRepository.findAllById(ids);
     }
 }
