@@ -159,6 +159,8 @@ class SubmissionControllerTest {
 
         mvc.perform(get("/api/v1/weeks/2026-w01/submissions").param("track", "pro")).andExpect(status().isBadRequest());
         mvc.perform(get("/api/v1/weeks/2026-w01/submissions").param("cursor", "!!")).andExpect(status().isBadRequest());
+        String huge = java.util.Base64.getUrlEncoder().encodeToString((Integer.MAX_VALUE + ":x").getBytes());
+        mvc.perform(get("/api/v1/weeks/2026-w01/submissions").param("cursor", huge)).andExpect(status().isBadRequest());
         mvc.perform(get("/api/v1/weeks/2099-w01/submissions")).andExpect(status().isNotFound());
     }
 

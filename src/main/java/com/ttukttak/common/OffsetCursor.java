@@ -13,6 +13,7 @@ import java.util.UUID;
  */
 // ponytail: offset이라 순서가 바뀌는 중엔 겹치거나 빠질 수 있어요. 문제되면 키셋 커서로.
 public record OffsetCursor(int offset, String seed) {
+    private static final int MAX_OFFSET = 1_000_000; // 이보다 뒤는 어차피 비어 있어요. next()가 넘치지 않게 막아요.
 
     /** null이면 처음부터, 새 씨앗으로 */
     public static OffsetCursor decode(String cursor) {
@@ -20,7 +21,7 @@ public record OffsetCursor(int offset, String seed) {
         try {
             String[] parts = new String(Base64.getUrlDecoder().decode(cursor), StandardCharsets.UTF_8).split(":", 2);
             int offset = Integer.parseInt(parts[0]);
-            if (offset < 0 || parts.length < 2) throw new IllegalArgumentException();
+            if (offset < 0 || offset > MAX_OFFSET || parts.length < 2) throw new IllegalArgumentException();
             return new OffsetCursor(offset, parts[1]);
         } catch (IllegalArgumentException e) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "invalid_request", "목록 위치가 올바르지 않아요.");
