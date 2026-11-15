@@ -1,6 +1,7 @@
 package com.ttukttak.submission.application;
 
-import com.ttukttak.common.exception.BusinessException;
+import com.ttukttak.common.OffsetCursor;
+import com.ttukttak.domain.feedback.application.query.FeedbackQueryService;
 import com.ttukttak.domain.submission.application.command.SubmissionCommandService;
 import com.ttukttak.domain.submission.application.query.SubmissionQueryService;
 import com.ttukttak.domain.submission.domain.Scoreboard;
@@ -20,10 +21,8 @@ import com.ttukttak.submission.presentation.request.UpdateSubmissionRequest;
 import com.ttukttak.submission.presentation.response.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
@@ -39,6 +38,7 @@ public class SubmissionFacade {
     private final SubmissionQueryService submissionQueryService;
     private final WeekQueryService weekQueryService;
     private final UserQueryService userQueryService;
+    private final FeedbackQueryService feedbackQueryService;
 
     /** sort가 없으면 제작 기간엔 무작위(먼저 낸 사람이 유리하지 않게), 이후엔 투표순 */
     public SubmissionListResponse list(String weekId, Track track, SubmissionSort sort, UUID exclude,
@@ -46,14 +46,15 @@ public class SubmissionFacade {
         Week week = weekQueryService.get(weekId);
         SubmissionSort order = sort != null ? sort
                 : week.phase(Instant.now()) == Phase.BUILDING ? SubmissionSort.RANDOM : SubmissionSort.VOTES;
-        Cursor at = Cursor.decode(cursor);
+        // ponytail: 명세는 세션마다 같은 순서지만, 비로그인에 세션을 만들지 않으려고 첫 페이지마다 새로 섞어요.
+        OffsetCursor at = OffsetCursor.decode(cursor);
         int size = Math.clamp(limit, 1, MAX_LIMIT);
         List<Submission> rows = submissionQueryService.page(weekId, track, exclude, order, at.seed(), at.offset(), size + 1);
         boolean hasNext = rows.size() > size;
         List<Submission> page = hasNext ? rows.subList(0, size) : rows;
         return new SubmissionListResponse(
                 cards(page, week, viewerId),
-                hasNext ? new Cursor(at.offset() + size, at.seed()).encode() : null,
+                hasNext ? at.next(size).encode() : null,
                 submissionQueryService.count(weekId, track, exclude));
     }
 
@@ -111,7 +112,7 @@ public class SubmissionFacade {
         if (card.isEmpty()) throw new SubmissionNotFoundException();
         User author = userQueryService.get(submission.getUserId());
         return SubmissionDetailResponse.of(card.getFirst(), submission, week,
-                submissionQueryService.count(week.getId(), null, null),
+                submissionQueryService.count(week.getId(), null, null), feedbackQueryService.count(submission.getId()),
                 author, submissionQueryService.streak(author.getId(), now).current(), now);
     }
 
@@ -130,26 +131,5 @@ public class SubmissionFacade {
                 .map(s -> SubmissionCard.of(s, authors.get(s.getUserId()), scoreboard.get(s.getId()), showRank,
                         viewerId, voted.contains(s.getId())))
                 .toList();
-    }
-
-    /** "몇 번째부터:무작위 씨앗"을 base64로. 무작위 순서가 페이지를 넘겨도 섞이지 않게 씨앗을 이어받아요. */
-    // ponytail: 명세는 세션마다 같은 순서지만, 비로그인에 세션을 만들지 않으려고 첫 페이지마다 새로 섞어요.
-    private record Cursor(int offset, String seed) {
-        static Cursor decode(String cursor) {
-            if (cursor == null) return new Cursor(0, UUID.randomUUID().toString().substring(0, 8));
-            try {
-                String[] parts = new String(Base64.getUrlDecoder().decode(cursor), StandardCharsets.UTF_8).split(":", 2);
-                int offset = Integer.parseInt(parts[0]);
-                if (offset < 0 || parts.length < 2) throw new IllegalArgumentException();
-                return new Cursor(offset, parts[1]);
-            } catch (IllegalArgumentException e) {
-                throw new BusinessException(HttpStatus.BAD_REQUEST, "invalid_request", "목록 위치가 올바르지 않아요.");
-            }
-        }
-
-        String encode() {
-            return Base64.getUrlEncoder().withoutPadding()
-                    .encodeToString((offset + ":" + seed).getBytes(StandardCharsets.UTF_8));
-        }
     }
 }

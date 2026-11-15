@@ -49,6 +49,9 @@ class SubmissionControllerTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        jdbc.update("delete from feedback_helpful");
+        jdbc.update("delete from feedback");
+        jdbc.update("delete from votes");
         jdbc.update("delete from submissions");
         jdbc.update("delete from participations");
         jdbc.update("delete from weeks");
