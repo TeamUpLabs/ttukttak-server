@@ -29,7 +29,6 @@ interface SubmissionJpaRepository extends JpaRepository<SubmissionJpaEntity, UUI
 
     Optional<SubmissionJpaEntity> findByWeekIdAndUserId(String weekId, UUID userId);
 
-    // ponytail: offset 페이지라 투표 중에 순서가 바뀌면 겹치거나 빠질 수 있어요. 문제되면 키셋 커서로.
     // VOTES는 표 많은 순, 동점이면 먼저 낸 순이에요.
     @Query(value = "select s.* " + VISIBLE + """
             order by

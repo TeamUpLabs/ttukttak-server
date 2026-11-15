@@ -3,6 +3,7 @@ package com.ttukttak.auth.application;
 import com.ttukttak.auth.presentation.request.UpdateUserRequest;
 import com.ttukttak.auth.presentation.response.MeResponse;
 import com.ttukttak.auth.presentation.response.UserResponse;
+import com.ttukttak.domain.feedback.application.query.FeedbackQueryService;
 import com.ttukttak.domain.submission.application.query.SubmissionQueryService;
 import com.ttukttak.domain.submission.domain.Submission;
 import com.ttukttak.domain.user.application.command.UserCommandService;
@@ -24,6 +25,7 @@ public class UserFacade {
     private final UserQueryService userQueryService;
     private final WeekQueryService weekQueryService;
     private final SubmissionQueryService submissionQueryService;
+    private final FeedbackQueryService feedbackQueryService;
 
     public UserResponse get(String handle) {
         User user = userQueryService.get(handle);
@@ -48,10 +50,11 @@ public class UserFacade {
     private MeResponse me(User user) {
         Instant now = Instant.now();
         Week week = weekQueryService.current(now).orElse(null);
-        if (week == null) return MeResponse.from(user, null);
+        long points = feedbackQueryService.points(user.getId());
+        if (week == null) return MeResponse.from(user, null, points);
         UUID submissionId = submissionQueryService.find(week.getId(), user.getId()).map(Submission::getId).orElse(null);
         return MeResponse.from(user, new MeResponse.CurrentWeek(week.getId(),
                 weekQueryService.isJoined(week.getId(), user.getId()), submissionId,
-                submissionQueryService.streak(user.getId(), now).current()));
+                submissionQueryService.streak(user.getId(), now).current()), points);
     }
 }

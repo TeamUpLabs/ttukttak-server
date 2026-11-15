@@ -24,7 +24,6 @@ public class User {
     private String blogLink;
 
     private Role role;
-    private int points;
 
     private Instant joinedAt;
 
