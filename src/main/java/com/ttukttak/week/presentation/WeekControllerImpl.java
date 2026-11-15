@@ -31,8 +31,8 @@ public class WeekControllerImpl implements WeekController {
 
     @Override
     @GetMapping("/{weekId}")
-    public WeekDetailResponse get(@PathVariable String weekId) {
-        return weekFacade.get(weekId);
+    public WeekDetailResponse get(@PathVariable String weekId, Principal principal) {
+        return weekFacade.get(weekId, principal == null ? null : UUID.fromString(principal.getName()));
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.ttukttak.week.application;
 
 import com.ttukttak.domain.submission.application.query.SubmissionQueryService;
 import com.ttukttak.domain.week.application.command.WeekCommandService;
+import com.ttukttak.submission.application.SubmissionFacade;
 import com.ttukttak.domain.week.application.query.WeekQueryService;
 import com.ttukttak.domain.week.domain.Week;
 import com.ttukttak.week.presentation.request.ImportWeeksRequest;
@@ -23,6 +24,7 @@ public class WeekFacade {
     private final WeekCommandService weekCommandService;
     private final WeekQueryService weekQueryService;
     private final SubmissionQueryService submissionQueryService;
+    private final SubmissionFacade submissionFacade;
 
     public CurrentWeekResponse current() {
         Instant now = Instant.now();
@@ -44,10 +46,11 @@ public class WeekFacade {
                 hasNext ? page.getLast().getId() : null);
     }
 
-    public WeekDetailResponse get(String id) {
+    public WeekDetailResponse get(String id, UUID viewerId) {
         Instant now = Instant.now();
         Week week = weekQueryService.get(id);
         return WeekDetailResponse.of(week, weekQueryService.participants(id), submissions(id),
+                submissionQueryService.scoreboard(id).totalVotes(), submissionFacade.podium(week, viewerId),
                 weekQueryService.prevTheme(id).orElse(null), weekQueryService.nextTheme(id).orElse(null), now);
     }
 

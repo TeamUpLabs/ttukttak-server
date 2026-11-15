@@ -16,6 +16,7 @@ import java.util.*;
 public class SubmissionQueryService {
     private final SubmissionRepository submissionRepository;
     private final WeekRepository weekRepository;
+    private final VoteRepository voteRepository;
 
     public Submission get(UUID id) {
         return submissionRepository.findById(id).orElseThrow(SubmissionNotFoundException::new);
@@ -36,6 +37,15 @@ public class SubmissionQueryService {
 
     public Map<String, Long> counts(Collection<String> weekIds) {
         return weekIds.isEmpty() ? Map.of() : submissionRepository.countByWeekIds(weekIds);
+    }
+
+    public Scoreboard scoreboard(String weekId) {
+        return new Scoreboard(voteRepository.totals(weekId));
+    }
+
+    /** submissionIds 중 userId가 투표한 것. 비로그인이면 비어 있어요. */
+    public Set<UUID> voted(UUID userId, Collection<UUID> submissionIds) {
+        return userId == null ? Set.of() : voteRepository.findVoted(userId, submissionIds);
     }
 
     // ponytail: 볼 때마다 전체 주차를 훑어요. 주차가 수백 개가 되면 users.current_streak에 저장해요.

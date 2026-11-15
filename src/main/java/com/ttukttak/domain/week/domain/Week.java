@@ -57,6 +57,19 @@ public class Week {
         if (phase != Phase.BUILDING) throw WeekPhaseException.submissionClosed();
     }
 
+    /** 투표는 제출 마감부터 투표 마감까지만 받아요. */
+    public void requireVoting(Instant now) {
+        Phase phase = phase(now);
+        if (phase == Phase.BREAK) throw WeekPhaseException.breakWeek();
+        if (phase != Phase.VOTING) throw WeekPhaseException.votingClosed();
+    }
+
+    /** 투표가 끝나야 순위를 보여줘요. */
+    public boolean isVotingOver(Instant now) {
+        Phase phase = phase(now);
+        return phase == Phase.TALLYING || phase == Phase.CLOSED;
+    }
+
     /** 주제 주는 일정 4개가 순서대로 있어야 하고, 휴식 주는 회차·마감이 없어요. */
     public void validate() {
         if (type == WeekType.THEME) {

@@ -8,6 +8,7 @@ import com.ttukttak.submission.presentation.request.UpdateSubmissionRequest;
 import com.ttukttak.submission.presentation.response.SubmissionDetailResponse;
 import com.ttukttak.submission.presentation.response.SubmissionListResponse;
 import com.ttukttak.submission.presentation.response.SubmitResponse;
+import com.ttukttak.submission.presentation.response.VoteResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -63,4 +64,18 @@ public interface SubmissionController {
     @ApiResponse(responseCode = "409", description = "submission_closed",
             content = @Content(schema = @Schema(implementation = ApiError.class)))
     void withdraw(UUID id, Principal principal);
+
+    @Operation(summary = "투표", description = "투표 기간에만. 여러 번 불러도 한 표만 세요.")
+    @ApiResponse(responseCode = "200", description = "투표했어요")
+    @ApiResponse(responseCode = "403", description = "own_submission",
+            content = @Content(schema = @Schema(implementation = ApiError.class)))
+    @ApiResponse(responseCode = "409", description = "voting_closed",
+            content = @Content(schema = @Schema(implementation = ApiError.class)))
+    VoteResponse vote(UUID id, Principal principal);
+
+    @Operation(summary = "투표 취소", description = "투표 기간에만.")
+    @ApiResponse(responseCode = "200", description = "취소했어요")
+    @ApiResponse(responseCode = "409", description = "voting_closed",
+            content = @Content(schema = @Schema(implementation = ApiError.class)))
+    VoteResponse unvote(UUID id, Principal principal);
 }

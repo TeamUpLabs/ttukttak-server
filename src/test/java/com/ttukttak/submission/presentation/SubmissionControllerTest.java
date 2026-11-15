@@ -181,6 +181,74 @@ class SubmissionControllerTest {
         }
     }
 
+    @Test
+    void vote() throws Exception {
+        User carol = userCommandService.loginWithGithub(7003L, "carol", null, null);
+        String a = submit(alice, "regular", "앨리스");
+        String b = submit(bob, "regular", "밥");
+        String c = submit(carol, "expert", "캐럴");
+
+        // 제작 기간엔 투표 못 해요.
+        mvc.perform(write(as(bob, put("/api/v1/submissions/" + a + "/vote"))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("voting_closed"));
+
+        reschedule(-4); // 투표 기간
+        mvc.perform(write(as(alice, put("/api/v1/submissions/" + a + "/vote"))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("own_submission"));
+        mvc.perform(write(as(bob, put("/api/v1/submissions/" + a + "/vote"))))
+                .andExpect(jsonPath("$.voted").value(true))
+                .andExpect(jsonPath("$.voteCount").value(1));
+        mvc.perform(write(as(bob, put("/api/v1/submissions/" + a + "/vote")))) // 여러 번 눌러도 한 표
+                .andExpect(jsonPath("$.voteCount").value(1));
+        mvc.perform(write(as(carol, put("/api/v1/submissions/" + a + "/vote")))).andExpect(jsonPath("$.voteCount").value(2));
+        mvc.perform(write(as(alice, put("/api/v1/submissions/" + c + "/vote")))).andExpect(jsonPath("$.voteCount").value(1));
+        mvc.perform(write(put("/api/v1/submissions/" + c + "/vote"))).andExpect(status().isUnauthorized());
+
+        // 투표 기간 기본 정렬은 표 많은 순, 순위는 아직 안 보여요.
+        mvc.perform(as(bob, get("/api/v1/weeks/2026-w01/submissions")))
+                .andExpect(jsonPath("$.items[0].id").value(a))
+                .andExpect(jsonPath("$.items[0].voteCount").value(2))
+                .andExpect(jsonPath("$.items[0].viewer.voted").value(true))
+                .andExpect(jsonPath("$.items[0].rank.track").value(nullValue()))
+                .andExpect(jsonPath("$.items[2].id").value(b));
+
+        mvc.perform(write(as(bob, delete("/api/v1/submissions/" + a + "/vote"))))
+                .andExpect(jsonPath("$.voted").value(false))
+                .andExpect(jsonPath("$.voteCount").value(1));
+
+        // 결과 발표: 앨리스와 캐럴이 1표로 같으면 먼저 낸 앨리스가 앞
+        reschedule(-8);
+        mvc.perform(write(as(bob, put("/api/v1/submissions/" + a + "/vote"))))
+                .andExpect(jsonPath("$.error.code").value("voting_closed"));
+        mvc.perform(get("/api/v1/weeks/2026-w01"))
+                .andExpect(jsonPath("$.stats.votes").value(2))
+                .andExpect(jsonPath("$.podium.regular.length()").value(2))
+                .andExpect(jsonPath("$.podium.regular[0].id").value(a))
+                .andExpect(jsonPath("$.podium.regular[1].rank.track").value(2))
+                .andExpect(jsonPath("$.podium.expert[0].id").value(c))
+                .andExpect(jsonPath("$.podium.expert[0].rank.overall").value(2))
+                .andExpect(jsonPath("$.podium.beginner.length()").value(0));
+        mvc.perform(get("/api/v1/submissions/" + b))
+                .andExpect(jsonPath("$.submission.rank.track").value(2))
+                .andExpect(jsonPath("$.submission.rank.overall").value(3));
+    }
+
+    private String submit(User user, String track, String title) throws Exception {
+        String created = mvc.perform(write(as(user, post("/api/v1/weeks/2026-w01/submissions"))).content(body(track, title)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return JsonPath.read(created, "$.submission.id");
+    }
+
+    /** 2026-w01을 startDay일 뒤(음수면 전)에 열린 것으로 다시 가져와요. */
+    private void reschedule(int startDay) throws Exception {
+        mvc.perform(write(admin(post("/api/v1/admin/weeks/import")))
+                        .content("{ \"weeks\": [ %s ] }".formatted(theme("2026-w01", 2, startDay))))
+                .andExpect(status().isNoContent());
+    }
+
     private static String body(String track, String title) {
         return """
                 { "track": "%s", "title": "%s", "summary": "버튼 하나로 모스 부호를 보내요.",
