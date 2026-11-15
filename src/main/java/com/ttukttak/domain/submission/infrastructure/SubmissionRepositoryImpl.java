@@ -31,6 +31,11 @@ class SubmissionRepositoryImpl implements SubmissionRepository {
     }
 
     @Override
+    public Optional<Submission> findByIdForShare(UUID id) {
+        return jpaRepository.findByIdForShare(id).map(SubmissionJpaEntity::toDomain);
+    }
+
+    @Override
     public Optional<Submission> findByWeekIdAndUserId(String weekId, UUID userId) {
         return jpaRepository.findByWeekIdAndUserId(weekId, userId).map(SubmissionJpaEntity::toDomain);
     }

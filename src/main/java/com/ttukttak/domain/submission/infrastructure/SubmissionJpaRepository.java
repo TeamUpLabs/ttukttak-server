@@ -23,6 +23,10 @@ interface SubmissionJpaRepository extends JpaRepository<SubmissionJpaEntity, UUI
     @Query("select s from SubmissionJpaEntity s where s.id = :id")
     Optional<SubmissionJpaEntity> findByIdForUpdate(UUID id);
 
+    @Lock(LockModeType.PESSIMISTIC_READ)
+    @Query("select s from SubmissionJpaEntity s where s.id = :id")
+    Optional<SubmissionJpaEntity> findByIdForShare(UUID id);
+
     Optional<SubmissionJpaEntity> findByWeekIdAndUserId(String weekId, UUID userId);
 
     // ponytail: offset 페이지라 투표 중에 순서가 바뀌면 겹치거나 빠질 수 있어요. 문제되면 키셋 커서로.

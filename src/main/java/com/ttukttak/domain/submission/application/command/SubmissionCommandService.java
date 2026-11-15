@@ -68,8 +68,9 @@ public class SubmissionCommandService {
         return voteRepository.count(id);
     }
 
+    // 철회와 동시에 와도 표가 주인 없이 남지 않게 행을 공유 잠금으로 읽어요.
     private Submission votable(UUID id, Instant now) {
-        Submission submission = submissionRepository.findById(id).orElseThrow(SubmissionNotFoundException::new);
+        Submission submission = submissionRepository.findByIdForShare(id).orElseThrow(SubmissionNotFoundException::new);
         weekRepository.findById(submission.getWeekId()).orElseThrow(WeekNotFoundException::new).requireVoting(now);
         return submission;
     }
