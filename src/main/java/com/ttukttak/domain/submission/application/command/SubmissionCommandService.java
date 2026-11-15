@@ -47,9 +47,9 @@ public class SubmissionCommandService {
         submissionRepository.delete(editable(id, userId, now).getId());
     }
 
-    // 본인 것만, 제출 마감 전까지만 고칠 수 있어요.
+    // 본인 것만, 제출 마감 전까지만 고칠 수 있어요. 동시 수정은 행 잠금으로 줄 세워요.
     private Submission editable(UUID id, UUID userId, Instant now) {
-        Submission submission = submissionRepository.findById(id).orElseThrow(SubmissionNotFoundException::new);
+        Submission submission = submissionRepository.findByIdForUpdate(id).orElseThrow(SubmissionNotFoundException::new);
         if (!submission.isAuthor(userId)) throw new NotAuthorException();
         requireBuilding(submission.getWeekId(), now);
         return submission;
