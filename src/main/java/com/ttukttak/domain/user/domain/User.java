@@ -26,9 +26,6 @@ public class User {
     private Role role;
     private int points;
 
-    private int currentStreak;
-    private int bestStreak;
-
     private Instant joinedAt;
 
     private Instant createdAt;

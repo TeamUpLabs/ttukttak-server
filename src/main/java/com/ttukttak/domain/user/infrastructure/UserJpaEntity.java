@@ -49,6 +49,7 @@ class UserJpaEntity {
 
     private int points;
 
+    // 연속 제출은 제출 기록으로 계산해요(Streak). 칸은 명세 스키마에 맞춰 0으로 남겨요.
     private int currentStreak;
     private int bestStreak;
 
@@ -77,8 +78,6 @@ class UserJpaEntity {
         entity.blogLink = user.getBlogLink();
         entity.role = user.getRole();
         entity.points = user.getPoints();
-        entity.currentStreak = user.getCurrentStreak();
-        entity.bestStreak = user.getBestStreak();
         entity.joinedAt = user.getJoinedAt();
         entity.createdAt = user.getCreatedAt();
         entity.updatedAt = user.getUpdatedAt();
@@ -98,8 +97,6 @@ class UserJpaEntity {
                 .blogLink(blogLink)
                 .role(role)
                 .points(points)
-                .currentStreak(currentStreak)
-                .bestStreak(bestStreak)
                 .joinedAt(joinedAt)
                 .createdAt(createdAt)
                 .updatedAt(updatedAt)

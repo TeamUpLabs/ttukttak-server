@@ -26,7 +26,8 @@ public class UserFacade {
     private final SubmissionQueryService submissionQueryService;
 
     public UserResponse get(String handle) {
-        return UserResponse.from(userQueryService.get(handle));
+        User user = userQueryService.get(handle);
+        return UserResponse.from(user, submissionQueryService.streak(user.getId(), Instant.now()));
     }
 
     public MeResponse me(UUID id) {
