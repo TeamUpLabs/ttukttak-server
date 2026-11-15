@@ -7,6 +7,7 @@ import com.ttukttak.domain.submission.domain.Streak;
 import com.ttukttak.domain.submission.domain.Submission;
 import com.ttukttak.domain.submission.domain.SubmissionSort;
 import com.ttukttak.domain.submission.domain.Track;
+import com.ttukttak.domain.submission.exception.AlreadySubmittedException;
 import com.ttukttak.domain.submission.exception.SubmissionNotFoundException;
 import com.ttukttak.domain.user.application.query.UserQueryService;
 import com.ttukttak.domain.user.domain.User;
@@ -17,6 +18,7 @@ import com.ttukttak.submission.presentation.request.SubmitRequest;
 import com.ttukttak.submission.presentation.request.UpdateSubmissionRequest;
 import com.ttukttak.submission.presentation.response.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
@@ -63,7 +65,15 @@ public class SubmissionFacade {
     public SubmitResponse submit(String weekId, UUID userId, SubmitRequest request) {
         Instant now = Instant.now();
         Streak before = submissionQueryService.streak(userId, now);
-        Submission saved = submissionCommandService.submit(weekId, userId, request.toContent(), now);
+        Submission saved;
+        try {
+            saved = submissionCommandService.submit(weekId, userId, request.toContent(), now);
+        } catch (DataIntegrityViolationException e) {
+            // 동시에 두 번 내면 늦은 쪽이 고유 제약에 걸려요. 롤백된 트랜잭션 밖에서 먼저 저장된 걸 찾아 알려줘요.
+            throw submissionQueryService.find(weekId, userId)
+                    .map(existing -> (RuntimeException) new AlreadySubmittedException(existing.getId()))
+                    .orElse(e);
+        }
         Streak after = submissionQueryService.streak(userId, now);
         return new SubmitResponse(detail(saved, userId, now).submission(),
                 new SubmitResponse.Streak(after.current(), after.best(), after.best() > before.best()));
