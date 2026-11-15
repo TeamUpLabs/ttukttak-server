@@ -42,6 +42,10 @@ interface FeedbackJpaRepository extends JpaRepository<FeedbackJpaEntity, UUID> {
     @Query(value = "delete from feedback_helpful where feedback_id = :feedbackId", nativeQuery = true)
     void deleteHelpful(UUID feedbackId);
 
+    // 도움돼요(공유 잠금)가 끝나길 기다렸다가 잠가서, 지우는 사이에 새 도움돼요가 끼지 않게 해요.
+    @Query(value = "select id from feedback where submission_id = :submissionId for update", nativeQuery = true)
+    List<UUID> lockBySubmissionId(UUID submissionId);
+
     @Modifying
     @Query(value = """
             delete from feedback_helpful where feedback_id in (select id from feedback where submission_id = :submissionId)""",
