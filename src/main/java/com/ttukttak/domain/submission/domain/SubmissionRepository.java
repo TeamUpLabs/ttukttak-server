@@ -14,6 +14,9 @@ public interface SubmissionRepository {
     /** 트랜잭션이 끝날 때까지 행을 잠가요. 동시에 고쳐도 앞 수정을 덮어쓰지 않게 해요. */
     Optional<Submission> findByIdForUpdate(UUID id);
 
+    /** 같이 읽는 건 막지 않고 findByIdForUpdate(철회)와만 줄을 서요. 투표가 철회 사이에 끼지 않게 해요. */
+    Optional<Submission> findByIdForShare(UUID id);
+
     Optional<Submission> findByWeekIdAndUserId(String weekId, UUID userId);
 
     void delete(UUID id);

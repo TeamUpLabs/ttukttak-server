@@ -13,6 +13,10 @@ public class WeekPhaseException extends BusinessException {
         return new WeekPhaseException("break_week", "이번 주는 쉬는 주예요.");
     }
 
+    public static WeekPhaseException votingClosed() {
+        return new WeekPhaseException("voting_closed", "투표 기간이 아니에요.");
+    }
+
     public static WeekPhaseException submissionClosed() {
         return new WeekPhaseException("submission_closed", "제출 기간이 아니에요.");
     }

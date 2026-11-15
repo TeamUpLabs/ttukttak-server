@@ -25,11 +25,11 @@ public interface WeekController {
     WeekListResponse archive(@Parameter(description = "이전 응답의 nextCursor") String cursor,
                              @Parameter(description = "기본 12, 최대 50") int limit);
 
-    @Operation(summary = "주차 결과")
+    @Operation(summary = "주차 결과", description = "podium은 결과 발표(closed) 뒤에만 채워져요.")
     @ApiResponse(responseCode = "200", description = "찾았어요")
     @ApiResponse(responseCode = "404", description = "not_found",
             content = @Content(schema = @Schema(implementation = ApiError.class)))
-    WeekDetailResponse get(@Parameter(description = "주차 id", example = "2026-w47") String weekId);
+    WeekDetailResponse get(@Parameter(description = "주차 id", example = "2026-w47") String weekId, Principal principal);
 
     @Operation(summary = "테마 버튼 누르기", description = "1초 동안 모아서 보내요.")
     @ApiResponse(responseCode = "200", description = "더했어요")

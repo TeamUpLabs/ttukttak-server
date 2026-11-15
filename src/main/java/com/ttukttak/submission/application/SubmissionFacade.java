@@ -3,6 +3,7 @@ package com.ttukttak.submission.application;
 import com.ttukttak.common.exception.BusinessException;
 import com.ttukttak.domain.submission.application.command.SubmissionCommandService;
 import com.ttukttak.domain.submission.application.query.SubmissionQueryService;
+import com.ttukttak.domain.submission.domain.Scoreboard;
 import com.ttukttak.domain.submission.domain.Streak;
 import com.ttukttak.domain.submission.domain.Submission;
 import com.ttukttak.domain.submission.domain.SubmissionSort;
@@ -50,10 +51,8 @@ public class SubmissionFacade {
         List<Submission> rows = submissionQueryService.page(weekId, track, exclude, order, at.seed(), at.offset(), size + 1);
         boolean hasNext = rows.size() > size;
         List<Submission> page = hasNext ? rows.subList(0, size) : rows;
-        Map<UUID, User> authors = userQueryService.getAll(page.stream().map(Submission::getUserId).toList())
-                .stream().collect(Collectors.toMap(User::getId, Function.identity()));
         return new SubmissionListResponse(
-                page.stream().map(s -> SubmissionCard.of(s, authors.get(s.getUserId()), viewerId)).toList(),
+                cards(page, week, viewerId),
                 hasNext ? new Cursor(at.offset() + size, at.seed()).encode() : null,
                 submissionQueryService.count(weekId, track, exclude));
     }
@@ -88,13 +87,49 @@ public class SubmissionFacade {
         submissionCommandService.withdraw(id, userId, Instant.now());
     }
 
+    public VoteResponse vote(UUID id, UUID userId) {
+        return new VoteResponse(true, submissionCommandService.vote(id, userId, Instant.now()));
+    }
+
+    public VoteResponse unvote(UUID id, UUID userId) {
+        return new VoteResponse(false, submissionCommandService.unvote(id, userId, Instant.now()));
+    }
+
+    /** 주차 결과의 트랙별 상위 3개. 결과 발표 전엔 null이에요. */
+    public Podium podium(Week week, UUID viewerId) {
+        if (week.phase(Instant.now()) != Phase.CLOSED) return null;
+        Scoreboard scoreboard = submissionQueryService.scoreboard(week.getId());
+        Function<Track, List<SubmissionCard>> top = track -> cards(
+                scoreboard.podium(track).stream().map(submissionQueryService::get).toList(), week, scoreboard, viewerId);
+        return new Podium(top.apply(Track.BEGINNER), top.apply(Track.REGULAR), top.apply(Track.EXPERT));
+    }
+
     // 탈퇴한 사용자의 제출작은 없는 것으로 봐요.
     private SubmissionDetailResponse detail(Submission submission, UUID viewerId, Instant now) {
-        User author = userQueryService.getAll(List.of(submission.getUserId())).stream().findFirst()
-                .orElseThrow(SubmissionNotFoundException::new);
         Week week = weekQueryService.get(submission.getWeekId());
-        return SubmissionDetailResponse.of(submission, week, submissionQueryService.count(week.getId(), null, null),
-                author, submissionQueryService.streak(author.getId(), now).current(), viewerId, now);
+        List<SubmissionCard> card = cards(List.of(submission), week, viewerId);
+        if (card.isEmpty()) throw new SubmissionNotFoundException();
+        User author = userQueryService.get(submission.getUserId());
+        return SubmissionDetailResponse.of(card.getFirst(), submission, week,
+                submissionQueryService.count(week.getId(), null, null),
+                author, submissionQueryService.streak(author.getId(), now).current(), now);
+    }
+
+    private List<SubmissionCard> cards(List<Submission> submissions, Week week, UUID viewerId) {
+        return cards(submissions, week, submissionQueryService.scoreboard(week.getId()), viewerId);
+    }
+
+    // 작성자가 탈퇴했으면 빼요.
+    private List<SubmissionCard> cards(List<Submission> submissions, Week week, Scoreboard scoreboard, UUID viewerId) {
+        List<UUID> ids = submissions.stream().map(Submission::getId).toList();
+        Map<UUID, User> authors = userQueryService.getAll(submissions.stream().map(Submission::getUserId).toList())
+                .stream().collect(Collectors.toMap(User::getId, Function.identity()));
+        Set<UUID> voted = submissionQueryService.voted(viewerId, ids);
+        boolean showRank = week.isVotingOver(Instant.now());
+        return submissions.stream().filter(s -> authors.containsKey(s.getUserId()))
+                .map(s -> SubmissionCard.of(s, authors.get(s.getUserId()), scoreboard.get(s.getId()), showRank,
+                        viewerId, voted.contains(s.getId())))
+                .toList();
     }
 
     /** "몇 번째부터:무작위 씨앗"을 base64로. 무작위 순서가 페이지를 넘겨도 섞이지 않게 씨앗을 이어받아요. */
