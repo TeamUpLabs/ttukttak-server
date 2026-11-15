@@ -35,6 +35,7 @@ class FeedbackRepositoryImpl implements FeedbackRepository {
         return jpaRepository.findByIdForShare(id).map(FeedbackJpaEntity::toDomain);
     }
 
+    // 부르는 쪽이 findByIdForUpdate로 이미 잠갔어요.
     @Override
     public void delete(UUID id) {
         jpaRepository.deleteHelpful(id);
@@ -43,6 +44,7 @@ class FeedbackRepositoryImpl implements FeedbackRepository {
 
     @Override
     public void deleteBySubmissionId(UUID submissionId) {
+        jpaRepository.lockBySubmissionId(submissionId);
         jpaRepository.deleteHelpfulBySubmissionId(submissionId);
         jpaRepository.deleteBySubmissionId(submissionId);
     }
