@@ -12,11 +12,12 @@ import java.util.List;
 public record WeekDetailResponse(Detail week, Stats stats, Object podium, Neighbor prev, Neighbor next) {
 
     public record Detail(String id, String code, WeekType type, Integer round, String title,
-                         WeekSchedule schedule, Phase phase, int submissionCount,
+                         WeekSchedule schedule, Phase phase, long submissionCount,
                          String announcement, String intent, List<String> constraints) {
     }
 
-    // ponytail: submissions, votes, completionRate, podium은 제출작·투표 도메인이 생기면 채워요.
+    // ponytail: votes, podium은 투표를 만들 때 채워요.
+    /** completionRate = 제출 수 ÷ 참가하기 누른 수(0–1) */
     public record Stats(long submissions, long participants, long votes, double completionRate) {
     }
 
@@ -27,16 +28,17 @@ public record WeekDetailResponse(Detail week, Stats stats, Object podium, Neighb
         }
     }
 
-    public static WeekDetailResponse of(Week week, long participants, Week prev, Week next, Instant now) {
+    public static WeekDetailResponse of(Week week, long participants, long submissions, Week prev, Week next,
+                                        Instant now) {
         boolean open = week.isOpen(now);
-        WeekSummary summary = WeekSummary.from(week, now);
+        WeekSummary summary = WeekSummary.from(week, submissions, now);
         return new WeekDetailResponse(
                 new Detail(summary.id(), summary.code(), summary.type(), summary.round(), summary.title(),
                         summary.schedule(), summary.phase(), summary.submissionCount(),
                         open ? week.getAnnouncement() : null,
                         open ? week.getIntent() : null,
                         open ? week.getConstraints() : null),
-                new Stats(0, participants, 0, 0),
+                new Stats(submissions, participants, 0, participants == 0 ? 0 : Math.min(1, (double) submissions / participants)),
                 null,
                 Neighbor.from(prev, now),
                 Neighbor.from(next, now));

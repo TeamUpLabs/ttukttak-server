@@ -1,5 +1,6 @@
 package com.ttukttak.common.exception;
 
+import com.ttukttak.domain.submission.exception.AlreadySubmittedException;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -11,6 +12,7 @@ import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -21,7 +23,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     ResponseEntity<ApiError> handleBusiness(BusinessException e) {
-        return ResponseEntity.status(e.getStatus()).body(ApiError.of(e.getCode(), e.getMessage()));
+        ApiError body = e instanceof AlreadySubmittedException already
+                ? ApiError.alreadySubmitted(e.getMessage(), already.getSubmissionId())
+                : ApiError.of(e.getCode(), e.getMessage());
+        return ResponseEntity.status(e.getStatus()).body(body);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -36,6 +41,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     ResponseEntity<ApiError> handleUnreadable(HttpMessageNotReadableException e) {
+        return ResponseEntity.badRequest().body(ApiError.of("invalid_request", "요청 형식이 올바르지 않아요."));
+    }
+
+    /** 경로·쿼리 값의 형식이 틀렸을 때 (UUID가 아닌 id, 모르는 track 등) */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    ResponseEntity<ApiError> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
         return ResponseEntity.badRequest().body(ApiError.of("invalid_request", "요청 형식이 올바르지 않아요."));
     }
 

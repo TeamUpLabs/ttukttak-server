@@ -5,6 +5,8 @@ import com.ttukttak.domain.user.domain.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,6 +23,11 @@ class UserRepositoryImpl implements UserRepository {
     @Override
     public Optional<User> findById(UUID id) {
         return jpaRepository.findById(id).map(UserJpaEntity::toDomain);
+    }
+
+    @Override
+    public List<User> findAllById(Collection<UUID> ids) {
+        return jpaRepository.findAllById(ids).stream().map(UserJpaEntity::toDomain).toList();
     }
 
     @Override

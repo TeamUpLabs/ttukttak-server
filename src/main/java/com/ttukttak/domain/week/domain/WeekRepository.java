@@ -18,6 +18,9 @@ public interface WeekRepository {
     /** 결과가 나온 주제 주, 최신순. cursor(주차 id)보다 앞선 것만 */
     List<Week> findClosedThemes(Instant now, String cursor, int limit);
 
+    /** 이미 열린 주제 주, 최신순 */
+    List<Week> findOpenedThemes(Instant now);
+
     Optional<Week> findPrevTheme(String id);
 
     Optional<Week> findNextTheme(String id);
