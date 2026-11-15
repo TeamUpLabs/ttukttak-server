@@ -80,6 +80,9 @@ class SubmissionControllerTest {
                 .andExpect(jsonPath("$.currentWeek.joined").value(true))
                 .andExpect(jsonPath("$.currentWeek.submissionId").value(id))
                 .andExpect(jsonPath("$.currentWeek.streak").value(1));
+        mvc.perform(get("/api/v1/users/alice"))
+                .andExpect(jsonPath("$.stats.currentStreak").value(1))
+                .andExpect(jsonPath("$.stats.bestStreak").value(1));
         mvc.perform(write(as(alice, delete("/api/v1/weeks/current/participation"))))
                 .andExpect(status().isConflict());
 

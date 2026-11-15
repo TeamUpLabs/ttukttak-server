@@ -2,6 +2,7 @@ package com.ttukttak.auth.presentation.response;
 
 import com.ttukttak.auth.presentation.common.UserLinks;
 import com.ttukttak.auth.presentation.common.UserSummary;
+import com.ttukttak.domain.submission.domain.Streak;
 import com.ttukttak.domain.user.domain.User;
 
 import java.time.OffsetDateTime;
@@ -19,7 +20,7 @@ public record UserResponse(Profile user, Stats stats) {
     public record Stats(int currentStreak, int bestStreak) {
     }
 
-    public static UserResponse from(User user) {
+    public static UserResponse from(User user, Streak streak) {
         return new UserResponse(
                 new Profile(
                         user.getId(),
@@ -30,6 +31,6 @@ public record UserResponse(Profile user, Stats stats) {
                         user.getBio(),
                         new UserLinks(user.getGithubLink(), user.getBlogLink()),
                         user.getJoinedAt().atZone(KST).toOffsetDateTime()),
-                new Stats(user.getCurrentStreak(), user.getBestStreak()));
+                new Stats(streak.current(), streak.best()));
     }
 }
