@@ -1,6 +1,8 @@
 package com.ttukttak.domain.submission.infrastructure;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.Collection;
@@ -16,6 +18,10 @@ interface SubmissionJpaRepository extends JpaRepository<SubmissionJpaEntity, UUI
               and (cast(:track as text) is null or s.track = cast(:track as text))
               and (cast(:exclude as uuid) is null or s.id <> cast(:exclude as uuid))
             """;
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select s from SubmissionJpaEntity s where s.id = :id")
+    Optional<SubmissionJpaEntity> findByIdForUpdate(UUID id);
 
     Optional<SubmissionJpaEntity> findByWeekIdAndUserId(String weekId, UUID userId);
 

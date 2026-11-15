@@ -11,6 +11,9 @@ public interface SubmissionRepository {
 
     Optional<Submission> findById(UUID id);
 
+    /** 트랜잭션이 끝날 때까지 행을 잠가요. 동시에 고쳐도 앞 수정을 덮어쓰지 않게 해요. */
+    Optional<Submission> findByIdForUpdate(UUID id);
+
     Optional<Submission> findByWeekIdAndUserId(String weekId, UUID userId);
 
     void delete(UUID id);
