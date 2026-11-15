@@ -8,6 +8,7 @@ import com.ttukttak.submission.presentation.request.UpdateSubmissionRequest;
 import com.ttukttak.submission.presentation.response.SubmissionDetailResponse;
 import com.ttukttak.submission.presentation.response.SubmissionListResponse;
 import com.ttukttak.submission.presentation.response.SubmitResponse;
+import com.ttukttak.submission.presentation.response.VoteResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -60,6 +61,18 @@ public class SubmissionControllerImpl implements SubmissionController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void withdraw(@PathVariable UUID id, Principal principal) {
         submissionFacade.withdraw(id, userId(principal));
+    }
+
+    @Override
+    @PutMapping("/submissions/{id}/vote")
+    public VoteResponse vote(@PathVariable UUID id, Principal principal) {
+        return submissionFacade.vote(id, userId(principal));
+    }
+
+    @Override
+    @DeleteMapping("/submissions/{id}/vote")
+    public VoteResponse unvote(@PathVariable UUID id, Principal principal) {
+        return submissionFacade.unvote(id, userId(principal));
     }
 
     // 공개 API는 비로그인이면 principal이 null이에요.

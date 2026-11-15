@@ -12,7 +12,6 @@ import com.ttukttak.week.presentation.response.WeekSummary;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.util.UUID;
 
 /** GET /submissions/:id 응답 */
 public record SubmissionDetailResponse(Detail submission, WeekSummary week, Author author, Checks checks) {
@@ -22,10 +21,10 @@ public record SubmissionDetailResponse(Detail submission, WeekSummary week, Auth
                          boolean demoWithoutLogin, OffsetDateTime updatedAt, long workHours, int feedbackCount) {
 
         /** workHours: 주제 공개부터 제출까지 걸린 시간(반올림) */
-        public static Detail of(Submission submission, Week week, User author, UUID viewerId) {
+        public static Detail of(SubmissionCard card, Submission submission, Week week) {
             var content = submission.getContent();
             long minutes = Duration.between(week.getOpensAt(), submission.getSubmittedAt()).toMinutes();
-            return new Detail(SubmissionCard.of(submission, author, viewerId), content.demoUrl(), content.repoUrl(),
+            return new Detail(card, content.demoUrl(), content.repoUrl(),
                     content.story(), content.demoWithoutLogin(), WeekSchedule.kst(submission.getUpdatedAt()),
                     Math.round(minutes / 60.0), 0);
         }
@@ -38,10 +37,10 @@ public record SubmissionDetailResponse(Detail submission, WeekSummary week, Auth
     public record Checks(boolean onTime, Boolean demoReachable, Boolean hasReadme, boolean confirmsRule) {
     }
 
-    public static SubmissionDetailResponse of(Submission submission, Week week, long submissionCount, User author,
-                                              int streak, UUID viewerId, Instant now) {
+    public static SubmissionDetailResponse of(SubmissionCard card, Submission submission, Week week,
+                                              long submissionCount, User author, int streak, Instant now) {
         return new SubmissionDetailResponse(
-                Detail.of(submission, week, author, viewerId),
+                Detail.of(card, submission, week),
                 WeekSummary.from(week, submissionCount, now),
                 new Author(UserSummary.from(author), streak),
                 new Checks(!submission.getSubmittedAt().isAfter(week.getSubmissionClosesAt()), null, null, true));
