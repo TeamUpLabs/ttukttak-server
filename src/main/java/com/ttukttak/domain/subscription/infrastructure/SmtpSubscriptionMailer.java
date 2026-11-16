@@ -8,7 +8,7 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 
-/** SPRING_MAIL_HOST 등 SMTP 설정이 없으면(로컬) 메일 대신 링크를 로그에 남겨요. */
+/** SMTP 설정(SPRING_MAIL_HOST 등)이 없으면 보내지 않고 경고만 남겨요. 링크는 토큰이라 로그에 남기지 않아요. */
 @Slf4j
 @Component
 class SmtpSubscriptionMailer implements SubscriptionMailer {
@@ -24,7 +24,7 @@ class SmtpSubscriptionMailer implements SubscriptionMailer {
     public void sendConfirmation(String email, String confirmUrl, String unsubscribeUrl) {
         JavaMailSender mail = sender.getIfAvailable();
         if (mail == null) {
-            log.info("SMTP 설정이 없어 구독 확인 메일 대신 링크를 남겨요: {}", confirmUrl);
+            log.warn("SMTP 설정이 없어 구독 확인 메일을 보내지 못했어요.");
             return;
         }
         SimpleMailMessage message = new SimpleMailMessage();
