@@ -49,6 +49,11 @@ public class WeekQueryService {
         return weekRepository.findOpenedThemes(now);
     }
 
+    /** 공개 시각이 지났는데 아직 주제 공개 메일을 안 보낸 주차 */
+    public List<Week> announceMailDue(Instant now) {
+        return weekRepository.findAnnounceMailDue(now);
+    }
+
     public Optional<Week> prevTheme(String id) {
         return weekRepository.findPrevTheme(id);
     }

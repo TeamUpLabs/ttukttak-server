@@ -15,6 +15,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -50,26 +53,30 @@ class SubscriptionControllerTest {
         mvc.perform(write(post("/api/v1/subscriptions")).header("X-Forwarded-Host", "evil.example")
                         .content("{ \"email\": \" Me@Example.com \", \"topic\": \"theme-announcement\" }"))
                 .andExpect(status().isAccepted());
-        ArgumentCaptor<String> confirm = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<String> unsubscribe = ArgumentCaptor.forClass(String.class);
-        verify(mailer).sendConfirmation(eq("me@example.com"), confirm.capture(), unsubscribe.capture());
-        assertThat(confirm.getValue()).startsWith("http://localhost:5173/api/v1/subscriptions/confirm?token=");
+        ArgumentCaptor<String> text = ArgumentCaptor.forClass(String.class);
+        verify(mailer).send(eq("me@example.com"), anyString(), text.capture());
+        String confirm = link(text.getValue(), "confirm");
+        String unsubscribe = link(text.getValue(), "unsubscribe");
+        assertThat(text.getValue()).contains("http://localhost:5173/api/v1/subscriptions/confirm?token=");
         assertThat(jdbc.queryForObject("select token_hash from email_subscriptions", String.class))
-                .isNotEqualTo(token(confirm.getValue())); // 토큰은 해시만 저장해요
+                .isNotEqualTo(confirm); // 확인 토큰은 해시만 저장해요
+        assertThat(confirm).isNotEqualTo(unsubscribe); // 확인과 해지는 다른 토큰이에요
 
         // 방금 보냈으면 같은 주소로 다시 신청해도 메일을 또 보내지 않아요. 응답은 같아요.
         subscribe("{ \"email\": \"me@example.com\" }");
-        verify(mailer, times(1)).sendConfirmation(anyString(), anyString(), anyString());
+        verify(mailer, times(1)).send(anyString(), anyString(), anyString());
 
         mvc.perform(get("/api/v1/subscriptions/confirm").param("token", "wrong"))
                 .andExpect(status().isFound())
                 .andExpect(redirectedUrl("/?subscribed=0"));
-        mvc.perform(get("/api/v1/subscriptions/confirm").param("token", token(confirm.getValue())))
+        mvc.perform(get("/api/v1/subscriptions/confirm").param("token", confirm))
                 .andExpect(status().isFound())
                 .andExpect(redirectedUrl("/?subscribed=1"));
         assertThat(jdbc.queryForObject("select status from email_subscriptions", String.class)).isEqualTo("ACTIVE");
 
-        mvc.perform(get("/api/v1/subscriptions/unsubscribe").param("token", token(unsubscribe.getValue())))
+        mvc.perform(get("/api/v1/subscriptions/unsubscribe").param("token", confirm)) // 확인 토큰으로는 해지 못 해요
+                .andExpect(redirectedUrl("/?unsubscribed=0"));
+        mvc.perform(get("/api/v1/subscriptions/unsubscribe").param("token", unsubscribe))
                 .andExpect(redirectedUrl("/?unsubscribed=1"));
         assertThat(jdbc.queryForObject("select status from email_subscriptions", String.class)).isEqualTo("UNSUBSCRIBED");
     }
@@ -82,13 +89,13 @@ class SubscriptionControllerTest {
 
         // 해지했던 주소는 다시 확인 메일을 받아요.
         subscribe("{ \"email\": \"me@example.com\" }");
-        verify(mailer, times(2)).sendConfirmation(eq("me@example.com"), anyString(), anyString());
+        verify(mailer, times(2)).send(eq("me@example.com"), anyString(), anyString());
         assertThat(jdbc.queryForObject("select status from email_subscriptions", String.class)).isEqualTo("PENDING");
     }
 
     @Test
     void mailFailureLooksTheSame() throws Exception {
-        doThrow(new RuntimeException("SMTP down")).when(mailer).sendConfirmation(anyString(), anyString(), anyString());
+        doThrow(new RuntimeException("SMTP down")).when(mailer).send(anyString(), anyString(), anyString());
         subscribe("{ \"email\": \"me@example.com\" }");
     }
 
@@ -108,8 +115,11 @@ class SubscriptionControllerTest {
                 .andExpect(jsonPath("$.status").value("pending"));
     }
 
-    private static String token(String url) {
-        return url.substring(url.indexOf("token=") + "token=".length());
+    /** 메일 본문에서 /subscriptions/{kind}?token=… 링크의 토큰을 꺼내요. */
+    static String link(String text, String kind) {
+        Matcher m = Pattern.compile("/subscriptions/" + kind + "\\?token=(\\S+)").matcher(text);
+        assertThat(m.find()).isTrue();
+        return m.group(1);
     }
 
     private static MockHttpServletRequestBuilder write(MockHttpServletRequestBuilder request) {

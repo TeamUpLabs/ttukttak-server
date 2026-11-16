@@ -28,6 +28,15 @@ public interface WeekRepository {
 
     Optional<Week> findNextTheme(String id);
 
+    /** 공개 시각에 주제 공개 메일을 보내도록 표시해요. */
+    void requestAnnounceMail(String id);
+
+    /** 공개 시각이 지났는데 아직 메일을 안 보낸 주차 */
+    List<Week> findAnnounceMailDue(Instant now);
+
+    /** 메일 보낼 차례를 가져가요. 이미 누가 가져갔으면 false라 두 번 보내지 않아요. */
+    boolean claimAnnounceMail(String id);
+
     /** 버튼 누른 횟수를 더하고 새 합계를 돌려줘요. */
     long addPresses(String id, int count);
 }

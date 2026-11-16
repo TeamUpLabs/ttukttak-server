@@ -44,6 +44,11 @@ class FeedbackRepositoryImpl implements FeedbackRepository {
     }
 
     @Override
+    public boolean hide(UUID id) {
+        return jpaRepository.hide(id) == 1;
+    }
+
+    @Override
     public void deleteBySubmissionId(UUID submissionId) {
         jpaRepository.lockBySubmissionId(submissionId);
         jpaRepository.deleteHelpfulBySubmissionId(submissionId);

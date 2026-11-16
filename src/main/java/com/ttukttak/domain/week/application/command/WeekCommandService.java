@@ -3,7 +3,9 @@ package com.ttukttak.domain.week.application.command;
 import com.ttukttak.domain.submission.domain.SubmissionRepository;
 import com.ttukttak.domain.submission.exception.AlreadySubmittedException;
 import com.ttukttak.domain.week.domain.*;
+import com.ttukttak.domain.week.exception.ScheduleLockedException;
 import com.ttukttak.domain.week.exception.WeekNotFoundException;
+import com.ttukttak.domain.week.exception.WeekPhaseException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.UnaryOperator;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +29,27 @@ public class WeekCommandService {
             week.validate();
             weekRepository.save(week);
         }
+    }
+
+    /** 공개된 주차의 일정은 force 없이 못 바꿔요. 바꾼 뒤에도 일정 규칙을 지켜야 해요. */
+    public Week update(String id, UnaryOperator<Week> patch, boolean force, Instant now) {
+        Week week = weekRepository.findById(id).orElseThrow(WeekNotFoundException::new);
+        Week patched = patch.apply(week);
+        if (week.isOpen(now) && !week.sameSchedule(patched) && !force) throw new ScheduleLockedException();
+        patched.validate();
+        return weekRepository.save(patched);
+    }
+
+    /** 상태를 공지 완료로 바꾸고, 공개 시각에 주제 공개 메일이 나가게 해요. 이미 열렸으면 다음 예약 작업 때 바로 나가요. */
+    public void announce(String id) {
+        Week week = weekRepository.findById(id).orElseThrow(WeekNotFoundException::new);
+        if (week.getType() == WeekType.BREAK) throw WeekPhaseException.breakWeek();
+        weekRepository.save(week.toBuilder().status(WeekStatus.ANNOUNCED).build());
+        weekRepository.requestAnnounceMail(id);
+    }
+
+    public boolean claimAnnounceMail(String id) {
+        return weekRepository.claimAnnounceMail(id);
     }
 
     // ponytail: 요청 제한(세션당 초당 5회)은 아직 없어요. 장난이 심해지면 붙여요.

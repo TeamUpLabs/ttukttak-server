@@ -6,6 +6,7 @@ import com.ttukttak.domain.feedback.domain.Reply;
 import jakarta.persistence.*;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
@@ -13,8 +14,9 @@ import java.util.UUID;
 
 import static lombok.AccessLevel.PROTECTED;
 
-// ponytail: 운영자 숨김 칸은 그 기능을 만들 때 붙여요.
+// 운영자가 숨긴 건 JPA로 읽을 때 빠져요. 네이티브 쿼리는 hidden_at is null을 직접 걸어요.
 @Entity
+@SQLRestriction("hidden_at is null")
 @Table(name = "feedback", indexes = {@Index(columnList = "submission_id"), @Index(columnList = "user_id")})
 @NoArgsConstructor(access = PROTECTED)
 class FeedbackJpaEntity {
@@ -41,6 +43,10 @@ class FeedbackJpaEntity {
     private String replyBody;
 
     private Instant replyAt;
+
+    // 숨기는 건 FeedbackJpaRepository.hide만 해요.
+    @Column(insertable = false, updatable = false)
+    private Instant hiddenAt;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)

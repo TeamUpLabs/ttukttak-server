@@ -32,6 +32,9 @@ class SubscriptionJpaEntity {
     @Column(nullable = false, unique = true)
     private String tokenHash;
 
+    @Column(unique = true) // 이 칸이 생기기 전에 신청한 주소는 비어 있다가 메일을 보낼 때 채워요
+    private String unsubscribeToken;
+
     @Column(nullable = false)
     private Instant sentAt;
 
@@ -49,6 +52,7 @@ class SubscriptionJpaEntity {
         entity.topic = subscription.getTopic();
         entity.status = subscription.getStatus();
         entity.tokenHash = subscription.getTokenHash();
+        entity.unsubscribeToken = subscription.getUnsubscribeToken();
         entity.sentAt = subscription.getSentAt();
         entity.confirmedAt = subscription.getConfirmedAt();
         entity.unsubscribedAt = subscription.getUnsubscribedAt();
@@ -62,6 +66,7 @@ class SubscriptionJpaEntity {
                 .topic(topic)
                 .status(status)
                 .tokenHash(tokenHash)
+                .unsubscribeToken(unsubscribeToken)
                 .sentAt(sentAt)
                 .confirmedAt(confirmedAt)
                 .unsubscribedAt(unsubscribedAt)

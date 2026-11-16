@@ -63,6 +63,10 @@ public class FeedbackFacade {
         feedbackCommandService.delete(id, userId);
     }
 
+    public void hide(UUID id) {
+        feedbackCommandService.hide(id);
+    }
+
     public HelpfulResponse markHelpful(UUID id, UUID userId) {
         return new HelpfulResponse(true, feedbackCommandService.markHelpful(id, userId));
     }

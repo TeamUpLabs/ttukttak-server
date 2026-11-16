@@ -17,6 +17,9 @@ public interface FeedbackRepository {
     /** 받은 도움돼요도 함께 지워요. */
     void delete(UUID id);
 
+    /** 운영자 숨김. 숨겼으면 true, 없거나 이미 숨겼으면 false */
+    boolean hide(UUID id);
+
     /** 제출작 철회: 피드백 행을 잠근 뒤 피드백과 받은 도움돼요를 모두 지워요. */
     void deleteBySubmissionId(UUID submissionId);
 

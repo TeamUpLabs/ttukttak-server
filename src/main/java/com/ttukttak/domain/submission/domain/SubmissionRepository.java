@@ -21,6 +21,9 @@ public interface SubmissionRepository {
 
     void delete(UUID id);
 
+    /** 운영자 숨김. 숨겼으면 true, 없거나 이미 숨겼으면 false */
+    boolean hide(UUID id, String reason);
+
     /** track, exclude는 null이면 거르지 않아요. seed는 RANDOM일 때 순서를 고정해요. */
     List<Submission> findPage(String weekId, Track track, UUID exclude, SubmissionSort sort, String seed,
                               int offset, int limit);

@@ -14,7 +14,7 @@ import java.util.stream.Stream;
 import static lombok.AccessLevel.PRIVATE;
 
 @Getter
-@Builder
+@Builder(toBuilder = true)
 @AllArgsConstructor(access = PRIVATE)
 public class Week {
     private String id;               // "2026-w47"
@@ -55,6 +55,11 @@ public class Week {
         Phase phase = phase(now);
         if (phase == Phase.BREAK) throw WeekPhaseException.breakWeek();
         if (phase != Phase.BUILDING) throw WeekPhaseException.submissionClosed();
+    }
+
+    public boolean sameSchedule(Week other) {
+        return Objects.equals(opensAt, other.opensAt) && Objects.equals(submissionClosesAt, other.submissionClosesAt)
+                && Objects.equals(votingClosesAt, other.votingClosesAt) && Objects.equals(resultsAt, other.resultsAt);
     }
 
     /** 투표는 제출 마감부터 투표 마감까지만 받아요. */
