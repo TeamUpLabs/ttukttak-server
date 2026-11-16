@@ -7,7 +7,7 @@ import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.HexFormat;
 
-/** 확인·해지 링크 토큰. 링크에는 원래 값을, DB에는 해시만 둬요. */
+/** 메일 링크 토큰. 확인 토큰은 링크에만 원래 값을, DB에는 해시만 둬요. */
 public final class Tokens {
     private static final SecureRandom RANDOM = new SecureRandom();
 

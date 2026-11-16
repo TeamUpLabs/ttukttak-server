@@ -6,6 +6,7 @@ import com.ttukttak.submission.application.SubmissionFacade;
 import com.ttukttak.domain.week.application.query.WeekQueryService;
 import com.ttukttak.domain.week.domain.Week;
 import com.ttukttak.week.presentation.request.ImportWeeksRequest;
+import com.ttukttak.week.presentation.request.UpdateWeekRequest;
 import com.ttukttak.week.presentation.response.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -64,6 +65,15 @@ public class WeekFacade {
 
     public ParticipationResponse leave(UUID userId) {
         return new ParticipationResponse(false, weekCommandService.leave(userId, Instant.now()));
+    }
+
+    public WeekDetailResponse update(String id, UpdateWeekRequest request) {
+        weekCommandService.update(id, request::applyTo, request.forced(), Instant.now());
+        return get(id, null);
+    }
+
+    public void announce(String id) {
+        weekCommandService.announce(id);
     }
 
     public void importWeeks(ImportWeeksRequest request) {

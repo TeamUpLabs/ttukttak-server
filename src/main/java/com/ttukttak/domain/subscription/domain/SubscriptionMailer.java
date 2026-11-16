@@ -1,6 +1,6 @@
 package com.ttukttak.domain.subscription.domain;
 
-/** 구독 확인 메일 보내기 */
+/** 구독자에게 메일 보내기 */
 public interface SubscriptionMailer {
-    void sendConfirmation(String email, String confirmUrl, String unsubscribeUrl);
+    void send(String to, String subject, String text);
 }

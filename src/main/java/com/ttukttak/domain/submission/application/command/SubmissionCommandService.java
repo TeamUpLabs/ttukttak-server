@@ -56,6 +56,12 @@ public class SubmissionCommandService {
         submissionRepository.delete(id);
     }
 
+    /** 운영자 숨김. 지우지 않고 모든 공개 화면에서 빼요. */
+    // ponytail: 명세는 작성자에게 메일을 보내지만, GitHub 로그인이라 메일 주소를 받지 않아서 아직 못 보내요.
+    public void hide(UUID id, String reason) {
+        if (!submissionRepository.hide(id, reason)) throw new SubmissionNotFoundException();
+    }
+
     /** 투표 기간에만, 내 제출작은 안 돼요. 여러 번 불러도 한 표만 세요. 새 표 수를 돌려줘요. */
     // ponytail: 요청 제한(사용자당 분당 60회)은 아직 없어요.
     public long vote(UUID id, UUID userId, Instant now) {

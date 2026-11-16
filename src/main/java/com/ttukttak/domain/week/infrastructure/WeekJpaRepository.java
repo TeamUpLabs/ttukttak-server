@@ -31,6 +31,16 @@ interface WeekJpaRepository extends JpaRepository<WeekJpaEntity, String> {
     @Query("update WeekJpaEntity w set w.presses = w.presses + :count where w.id = :id")
     void addPresses(String id, int count);
 
+    @Modifying(clearAutomatically = true)
+    @Query("update WeekJpaEntity w set w.announceMailPending = true where w.id = :id")
+    void requestAnnounceMail(String id);
+
+    List<WeekJpaEntity> findByAnnounceMailPendingTrueAndOpensAtLessThanEqual(Instant now);
+
+    @Modifying(clearAutomatically = true)
+    @Query("update WeekJpaEntity w set w.announceMailPending = false where w.id = :id and w.announceMailPending = true")
+    int claimAnnounceMail(String id);
+
     @Query("select w.presses from WeekJpaEntity w where w.id = :id")
     long presses(String id);
 }

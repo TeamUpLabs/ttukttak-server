@@ -21,24 +21,17 @@ class SmtpSubscriptionMailer implements SubscriptionMailer {
     }
 
     @Override
-    public void sendConfirmation(String email, String confirmUrl, String unsubscribeUrl) {
+    public void send(String to, String subject, String text) {
         JavaMailSender mail = sender.getIfAvailable();
         if (mail == null) {
-            log.warn("SMTP 설정이 없어 구독 확인 메일을 보내지 못했어요.");
+            log.warn("SMTP 설정이 없어 메일을 보내지 못했어요.");
             return;
         }
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(from);
-        message.setTo(email);
-        message.setSubject("[뚝딱] 주제 공개 알림 신청을 확인해 주세요");
-        message.setText("""
-                아래 링크를 누르면 매주 월요일 10:00 새 주제가 공개될 때 메일로 알려드려요.
-
-                %s
-
-                신청한 적이 없다면 이 메일은 무시해 주세요.
-                구독 해지: %s
-                """.formatted(confirmUrl, unsubscribeUrl));
+        message.setTo(to);
+        message.setSubject(subject);
+        message.setText(text);
         mail.send(message);
     }
 }

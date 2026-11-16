@@ -3,6 +3,7 @@ package com.ttukttak.domain.submission.infrastructure;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.Collection;
@@ -14,7 +15,7 @@ import java.util.UUID;
 interface SubmissionJpaRepository extends JpaRepository<SubmissionJpaEntity, UUID> {
     String VISIBLE = """
             from submissions s join users u on u.id = s.user_id and u.deleted_at is null
-            where s.week_id = :weekId
+            where s.week_id = :weekId and s.hidden_at is null
               and (cast(:track as text) is null or s.track = cast(:track as text))
               and (cast(:exclude as uuid) is null or s.id <> cast(:exclude as uuid))
             """;
@@ -45,7 +46,7 @@ interface SubmissionJpaRepository extends JpaRepository<SubmissionJpaEntity, UUI
 
     @Query(value = """
             select s.week_id, count(*) from submissions s join users u on u.id = s.user_id and u.deleted_at is null
-            where s.week_id in :weekIds group by s.week_id""", nativeQuery = true)
+            where s.week_id in :weekIds and s.hidden_at is null group by s.week_id""", nativeQuery = true)
     List<Object[]> countByWeekIds(Collection<String> weekIds);
 
     List<SubmissionJpaEntity> findByUserIdOrderBySubmittedAtDesc(UUID userId);
@@ -58,14 +59,22 @@ interface SubmissionJpaRepository extends JpaRepository<SubmissionJpaEntity, UUI
                        order by (select count(*) from votes v where v.submission_id = s.id) desc, s.submitted_at, s.id
                      ) track_rank
               from submissions s join users u on u.id = s.user_id and u.deleted_at is null
-              where s.week_id in (select week_id from submissions where user_id = :userId)
+              where s.week_id in (select week_id from submissions where user_id = :userId) and s.hidden_at is null
             ) ranked where user_id = :userId""", nativeQuery = true)
     List<Object[]> trackRanks(UUID userId);
 
     @Query(value = """
-            select count(*) from votes v join submissions s on s.id = v.submission_id where s.user_id = :userId""",
+            select count(*) from votes v join submissions s on s.id = v.submission_id
+            where s.user_id = :userId and s.hidden_at is null""",
             nativeQuery = true)
     long votesReceived(UUID userId);
+
+    /** 숨긴 행 수. 이미 숨겼거나 없으면 0 */
+    @Modifying
+    @Query(value = """
+            update submissions set hidden_at = now(), hidden_reason = :reason where id = :id and hidden_at is null""",
+            nativeQuery = true)
+    int hide(UUID id, String reason);
 
     @Query("select s.weekId from SubmissionJpaEntity s where s.userId = :userId")
     List<String> findWeekIdsByUserId(UUID userId);

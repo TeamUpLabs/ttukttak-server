@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
@@ -14,8 +15,10 @@ import java.util.UUID;
 
 import static lombok.AccessLevel.PROTECTED;
 
-// ponytail: 투표 수, 순위, 데모 확인 결과, 운영자 숨김 칸은 그 기능을 만들 때 붙여요.
+// ponytail: 데모 확인 결과 칸은 그 기능을 만들 때 붙여요.
+// 운영자가 숨긴 건 JPA로 읽을 때 빠져요. 네이티브 쿼리는 hidden_at is null을 직접 걸어요.
 @Entity
+@SQLRestriction("hidden_at is null")
 @Table(name = "submissions", uniqueConstraints = @UniqueConstraint(columnNames = {"week_id", "user_id"}))
 @NoArgsConstructor(access = PROTECTED)
 class SubmissionJpaEntity {
@@ -66,6 +69,13 @@ class SubmissionJpaEntity {
     private String storyRetro;
 
     private boolean demoWithoutLogin;
+
+    // 숨기는 건 SubmissionJpaRepository.hide만 해요.
+    @Column(insertable = false, updatable = false)
+    private Instant hiddenAt;
+
+    @Column(insertable = false, updatable = false, length = 300)
+    private String hiddenReason;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
