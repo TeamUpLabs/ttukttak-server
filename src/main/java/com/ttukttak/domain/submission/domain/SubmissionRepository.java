@@ -31,4 +31,15 @@ public interface SubmissionRepository {
     Map<String, Long> countByWeekIds(Collection<String> weekIds);
 
     List<String> findWeekIdsByUserId(UUID userId);
+
+    /** 최신순 */
+    List<Submission> findByUserId(UUID userId);
+
+    List<Submission> findAllById(Collection<UUID> ids);
+
+    /** userId의 제출작 id → 그 주 트랙 안 순위(표 많은 순, 동점이면 먼저 낸 순) */
+    Map<UUID, Integer> trackRanks(UUID userId);
+
+    /** userId의 제출작들이 받은 표 */
+    long votesReceived(UUID userId);
 }

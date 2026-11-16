@@ -48,6 +48,25 @@ interface SubmissionJpaRepository extends JpaRepository<SubmissionJpaEntity, UUI
             where s.week_id in :weekIds group by s.week_id""", nativeQuery = true)
     List<Object[]> countByWeekIds(Collection<String> weekIds);
 
+    List<SubmissionJpaEntity> findByUserIdOrderBySubmittedAtDesc(UUID userId);
+
+    // Scoreboard와 같은 순서예요.
+    @Query(value = """
+            select id, track_rank from (
+              select s.id, s.user_id, row_number() over (
+                       partition by s.week_id, s.track
+                       order by (select count(*) from votes v where v.submission_id = s.id) desc, s.submitted_at, s.id
+                     ) track_rank
+              from submissions s join users u on u.id = s.user_id and u.deleted_at is null
+              where s.week_id in (select week_id from submissions where user_id = :userId)
+            ) ranked where user_id = :userId""", nativeQuery = true)
+    List<Object[]> trackRanks(UUID userId);
+
+    @Query(value = """
+            select count(*) from votes v join submissions s on s.id = v.submission_id where s.user_id = :userId""",
+            nativeQuery = true)
+    long votesReceived(UUID userId);
+
     @Query("select s.weekId from SubmissionJpaEntity s where s.userId = :userId")
     List<String> findWeekIdsByUserId(UUID userId);
 }

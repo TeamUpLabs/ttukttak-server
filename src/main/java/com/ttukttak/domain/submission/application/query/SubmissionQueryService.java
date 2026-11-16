@@ -39,6 +39,23 @@ public class SubmissionQueryService {
         return weekIds.isEmpty() ? Map.of() : submissionRepository.countByWeekIds(weekIds);
     }
 
+    /** 최신순 */
+    public List<Submission> byUser(UUID userId) {
+        return submissionRepository.findByUserId(userId);
+    }
+
+    public List<Submission> getAll(Collection<UUID> ids) {
+        return submissionRepository.findAllById(ids);
+    }
+
+    public Map<UUID, Integer> trackRanks(UUID userId) {
+        return submissionRepository.trackRanks(userId);
+    }
+
+    public long votesReceived(UUID userId) {
+        return submissionRepository.votesReceived(userId);
+    }
+
     public Scoreboard scoreboard(String weekId) {
         return new Scoreboard(voteRepository.totals(weekId));
     }

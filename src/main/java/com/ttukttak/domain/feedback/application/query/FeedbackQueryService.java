@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.*;
 
 @Service
@@ -35,6 +36,16 @@ public class FeedbackQueryService {
     /** 비로그인이면 비어 있어요. */
     public Set<UUID> helpful(UUID userId, Collection<UUID> feedbackIds) {
         return userId == null ? Set.of() : feedbackRepository.findHelpful(userId, feedbackIds);
+    }
+
+    /** userId가 남긴 피드백, 최신순 */
+    public List<Feedback> byUser(UUID userId, int offset, int limit) {
+        return feedbackRepository.findPageByUserId(userId, offset, limit);
+    }
+
+    /** userId가 남긴 피드백 시각, 오래된 순 */
+    public List<Instant> createdAtByUser(UUID userId) {
+        return feedbackRepository.findCreatedAtByUserId(userId);
     }
 
     public long points(UUID userId) {

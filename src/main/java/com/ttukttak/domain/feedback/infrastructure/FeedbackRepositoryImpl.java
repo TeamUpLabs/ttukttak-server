@@ -7,6 +7,7 @@ import com.ttukttak.domain.feedback.domain.FeedbackType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -81,6 +82,16 @@ class FeedbackRepositoryImpl implements FeedbackRepository {
     @Override
     public Set<UUID> findHelpful(UUID userId, Collection<UUID> feedbackIds) {
         return feedbackIds.isEmpty() ? Set.of() : Set.copyOf(jpaRepository.findHelpful(userId, feedbackIds));
+    }
+
+    @Override
+    public List<Feedback> findPageByUserId(UUID userId, int offset, int limit) {
+        return jpaRepository.findPageByUserId(userId, offset, limit).stream().map(FeedbackJpaEntity::toDomain).toList();
+    }
+
+    @Override
+    public List<Instant> findCreatedAtByUserId(UUID userId) {
+        return jpaRepository.findCreatedAtByUserId(userId);
     }
 
     @Override

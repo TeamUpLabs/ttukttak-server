@@ -19,6 +19,8 @@ interface WeekJpaRepository extends JpaRepository<WeekJpaEntity, String> {
     List<WeekJpaEntity> findByTypeAndResultsAtLessThanEqualAndIdLessThanOrderByIdDesc(
             WeekType type, Instant now, String cursor, Limit limit);
 
+    List<WeekJpaEntity> findByOpensAtLessThanEqualOrderByIdDesc(Instant now, Limit limit);
+
     List<WeekJpaEntity> findByTypeAndOpensAtLessThanEqualOrderByIdDesc(WeekType type, Instant now);
 
     Optional<WeekJpaEntity> findFirstByTypeAndIdLessThanOrderByIdDesc(WeekType type, String id);

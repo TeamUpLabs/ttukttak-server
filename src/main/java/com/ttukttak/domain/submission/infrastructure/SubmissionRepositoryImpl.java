@@ -68,4 +68,25 @@ class SubmissionRepositoryImpl implements SubmissionRepository {
     public List<String> findWeekIdsByUserId(UUID userId) {
         return jpaRepository.findWeekIdsByUserId(userId);
     }
+
+    @Override
+    public List<Submission> findByUserId(UUID userId) {
+        return jpaRepository.findByUserIdOrderBySubmittedAtDesc(userId).stream().map(SubmissionJpaEntity::toDomain).toList();
+    }
+
+    @Override
+    public List<Submission> findAllById(Collection<UUID> ids) {
+        return jpaRepository.findAllById(ids).stream().map(SubmissionJpaEntity::toDomain).toList();
+    }
+
+    @Override
+    public Map<UUID, Integer> trackRanks(UUID userId) {
+        return jpaRepository.trackRanks(userId).stream()
+                .collect(Collectors.toMap(row -> (UUID) row[0], row -> ((Number) row[1]).intValue()));
+    }
+
+    @Override
+    public long votesReceived(UUID userId) {
+        return jpaRepository.votesReceived(userId);
+    }
 }
