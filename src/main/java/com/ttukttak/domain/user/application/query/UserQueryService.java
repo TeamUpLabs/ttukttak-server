@@ -9,8 +9,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
-import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -40,7 +42,7 @@ public class UserQueryService {
     }
 
     /** 탈퇴한 사용자는 빠져요. */
-    public List<User> getAll(Collection<UUID> ids) {
-        return userRepository.findAllById(ids);
+    public Map<UUID, User> getAll(Collection<UUID> ids) {
+        return userRepository.findAllById(ids).stream().collect(Collectors.toMap(User::getId, Function.identity()));
     }
 }
