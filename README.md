@@ -5,6 +5,7 @@
 ![Java 21](https://img.shields.io/badge/Java-21-007396)
 ![Spring Boot 4](https://img.shields.io/badge/Spring%20Boot-4.1-6DB33F)
 ![PostgreSQL 17](https://img.shields.io/badge/PostgreSQL-17-4169E1)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **뚝딱**은 매주 열리는 미니 해커톤 플랫폼이에요. 이 저장소는 REST API 서버예요. 프론트엔드는 [`ttukttak`](https://github.com/lee-seokmin/ttukttak)에 있어요.
 
@@ -22,6 +23,7 @@
 - [운영](#운영)
 - [알려진 한계](#알려진-한계)
 - [기여하기](#기여하기)
+- [라이선스](#라이선스)
 
 ## 한 주의 흐름
 
@@ -294,3 +296,7 @@ update users set role = 'ADMIN' where handle = '<github 아이디>';
   - 예: `feat: 운영자 주차 수정·공지 추가`
 - **PR:** 템플릿(개요 · 작업 내용 · 체크리스트 · 리뷰 포인트)을 채워요. CI와 CodeQL이 통과해야 합쳐요.
 - **DB:** 기존 칸을 바꾸면 `src/main/resources/db/patch.sql`에도 반영해요. 새 칸만 더할 때는 Hibernate가 만들어요.
+
+## 라이선스
+
+[MIT](LICENSE) © 2026 [lee-seokmin](https://github.com/lee-seokmin)
