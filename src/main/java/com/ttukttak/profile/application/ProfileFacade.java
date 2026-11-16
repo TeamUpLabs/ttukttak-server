@@ -108,7 +108,7 @@ public class ProfileFacade {
                         submissions.values().stream().map(Submission::getUserId).distinct().toList())
                 .stream().collect(Collectors.toMap(User::getId, Function.identity()));
         Map<UUID, Long> helpful = feedbackQueryService.helpfulCounts(page.stream().map(Feedback::getId).toList());
-        // 제출작 주인이 탈퇴했으면 빼요.
+        // 쿼리가 이미 걸렀어요. 그 사이에 철회·탈퇴한 것만 남을 수 있어 한 번 더 봐요.
         List<ProfileFeedbackListResponse.Item> items = page.stream()
                 .filter(f -> submissions.containsKey(f.getSubmissionId())
                         && authors.containsKey(submissions.get(f.getSubmissionId()).getUserId()))

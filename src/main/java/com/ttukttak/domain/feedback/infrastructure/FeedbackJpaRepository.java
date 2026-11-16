@@ -76,9 +76,14 @@ interface FeedbackJpaRepository extends JpaRepository<FeedbackJpaEntity, UUID> {
             nativeQuery = true)
     List<UUID> findHelpful(UUID userId, Collection<UUID> feedbackIds);
 
+    // 제출작 주인이 탈퇴한 건 페이지를 자르기 전에 빼요. 그래야 빈 페이지 뒤에 다음 페이지가 숨지 않아요.
     @Query(value = """
-            select * from feedback where user_id = :userId order by created_at desc, id offset :offset limit :limit""",
-            nativeQuery = true)
+            select f.* from feedback f
+            join submissions s on s.id = f.submission_id
+            join users u on u.id = s.user_id and u.deleted_at is null
+            where f.user_id = :userId
+            order by f.created_at desc, f.id
+            offset :offset limit :limit""", nativeQuery = true)
     List<FeedbackJpaEntity> findPageByUserId(UUID userId, int offset, int limit);
 
     @Query("select f.createdAt from FeedbackJpaEntity f where f.userId = :userId order by f.createdAt")
