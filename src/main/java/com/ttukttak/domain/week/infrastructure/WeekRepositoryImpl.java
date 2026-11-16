@@ -72,6 +72,22 @@ class WeekRepositoryImpl implements WeekRepository {
     }
 
     @Override
+    public void requestAnnounceMail(String id) {
+        jpaRepository.requestAnnounceMail(id);
+    }
+
+    @Override
+    public List<Week> findAnnounceMailDue(Instant now) {
+        return jpaRepository.findByAnnounceMailPendingTrueAndOpensAtLessThanEqual(now)
+                .stream().map(WeekJpaEntity::toDomain).toList();
+    }
+
+    @Override
+    public boolean claimAnnounceMail(String id) {
+        return jpaRepository.claimAnnounceMail(id) == 1;
+    }
+
+    @Override
     public long addPresses(String id, int count) {
         jpaRepository.addPresses(id, count);
         return jpaRepository.presses(id);

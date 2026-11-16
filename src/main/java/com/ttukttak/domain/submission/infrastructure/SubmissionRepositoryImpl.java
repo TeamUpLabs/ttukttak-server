@@ -46,6 +46,11 @@ class SubmissionRepositoryImpl implements SubmissionRepository {
     }
 
     @Override
+    public boolean hide(UUID id, String reason) {
+        return jpaRepository.hide(id, reason) == 1;
+    }
+
+    @Override
     public List<Submission> findPage(String weekId, Track track, UUID exclude, SubmissionSort sort, String seed,
                                      int offset, int limit) {
         return jpaRepository.findPage(weekId, track == null ? null : track.name(), exclude, sort.name(),

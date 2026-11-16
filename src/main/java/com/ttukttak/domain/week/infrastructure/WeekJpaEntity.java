@@ -71,6 +71,10 @@ class WeekJpaEntity {
     @Column(nullable = false, columnDefinition = "text")
     private String notes;
 
+    // 공지하면 true, 공개 시각에 메일을 보내면 false. 쓰고 빼는 건 WeekJpaRepository의 쿼리로만 해요.
+    @Column(nullable = false, columnDefinition = "boolean not null default false")
+    private boolean announceMailPending;
+
     // UPDATE 문에서 빠져요. 더하기는 WeekJpaRepository.addPresses만 해서 동시에 눌러도 잃지 않아요.
     @Column(updatable = false)
     private long presses;

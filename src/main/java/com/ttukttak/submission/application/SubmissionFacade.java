@@ -88,6 +88,10 @@ public class SubmissionFacade {
         submissionCommandService.withdraw(id, userId, Instant.now());
     }
 
+    public void hide(UUID id, String reason) {
+        submissionCommandService.hide(id, reason);
+    }
+
     public VoteResponse vote(UUID id, UUID userId) {
         return new VoteResponse(true, submissionCommandService.vote(id, userId, Instant.now()));
     }

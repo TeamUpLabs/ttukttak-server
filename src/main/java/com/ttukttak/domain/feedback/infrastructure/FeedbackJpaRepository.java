@@ -16,7 +16,7 @@ import java.util.UUID;
 interface FeedbackJpaRepository extends JpaRepository<FeedbackJpaEntity, UUID> {
     String VISIBLE = """
             from feedback f join users u on u.id = f.user_id and u.deleted_at is null
-            where f.submission_id = :submissionId
+            where f.submission_id = :submissionId and f.hidden_at is null
             """;
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -53,9 +53,15 @@ interface FeedbackJpaRepository extends JpaRepository<FeedbackJpaEntity, UUID> {
             nativeQuery = true)
     void deleteHelpfulBySubmissionId(UUID submissionId);
 
+    // 숨긴 것도 함께 지워요.
     @Modifying
-    @Query("delete from FeedbackJpaEntity f where f.submissionId = :submissionId")
+    @Query(value = "delete from feedback where submission_id = :submissionId", nativeQuery = true)
     void deleteBySubmissionId(UUID submissionId);
+
+    /** 숨긴 행 수. 이미 숨겼거나 없으면 0 */
+    @Modifying
+    @Query(value = "update feedback set hidden_at = now() where id = :id and hidden_at is null", nativeQuery = true)
+    int hide(UUID id);
 
     @Modifying
     @Query(value = """
@@ -81,7 +87,7 @@ interface FeedbackJpaRepository extends JpaRepository<FeedbackJpaEntity, UUID> {
             select f.* from feedback f
             join submissions s on s.id = f.submission_id
             join users u on u.id = s.user_id and u.deleted_at is null
-            where f.user_id = :userId
+            where f.user_id = :userId and f.hidden_at is null and s.hidden_at is null
             order by f.created_at desc, f.id
             offset :offset limit :limit""", nativeQuery = true)
     List<FeedbackJpaEntity> findPageByUserId(UUID userId, int offset, int limit);
@@ -93,8 +99,8 @@ interface FeedbackJpaRepository extends JpaRepository<FeedbackJpaEntity, UUID> {
     @Query(value = """
             select coalesce((select sum(least(100, 10 * n)) from (
                        select count(*) n from feedback f join submissions s on s.id = f.submission_id
-                       where f.user_id = :userId and f.earns_points group by s.week_id) weekly), 0)
+                       where f.user_id = :userId and f.earns_points and f.hidden_at is null group by s.week_id) weekly), 0)
                  + 2 * (select count(*) from feedback_helpful h join feedback f on f.id = h.feedback_id
-                        where f.user_id = :userId)""", nativeQuery = true)
+                        where f.user_id = :userId and f.hidden_at is null)""", nativeQuery = true)
     long points(UUID userId);
 }

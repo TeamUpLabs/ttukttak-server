@@ -22,14 +22,15 @@ public class Subscription {
     private String email;
     private String topic;
     private SubscriptionStatus status;
-    private String tokenHash;
+    private String tokenHash;        // 확인 링크 토큰의 해시
+    private String unsubscribeToken; // 해지 링크 토큰. 메일마다 넣어야 해서 원래 값을 둬요
     private Instant sentAt;
     private Instant confirmedAt;
     private Instant unsubscribedAt;
 
     public static Subscription create(String email, String topic, String tokenHash, Instant now) {
         return Subscription.builder().email(email).topic(topic).status(SubscriptionStatus.PENDING)
-                .tokenHash(tokenHash).sentAt(now).build();
+                .tokenHash(tokenHash).unsubscribeToken(Tokens.newToken()).sentAt(now).build();
     }
 
     /** 이미 구독 중이거나 방금 보냈으면 다시 안 보내요. */
@@ -42,6 +43,14 @@ public class Subscription {
         this.status = SubscriptionStatus.PENDING;
         this.tokenHash = tokenHash;
         this.sentAt = now;
+        ensureUnsubscribeToken();
+    }
+
+    /** 해지 토큰이 생기기 전에 신청한 주소에도 만들어 줘요. 만들었으면 true */
+    public boolean ensureUnsubscribeToken() {
+        if (unsubscribeToken != null) return false;
+        unsubscribeToken = Tokens.newToken();
+        return true;
     }
 
     public void confirm(Instant now) {

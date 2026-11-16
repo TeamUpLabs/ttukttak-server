@@ -53,6 +53,11 @@ public class FeedbackCommandService {
         feedbackRepository.delete(mine(id, userId).getId());
     }
 
+    /** 운영자 숨김. 지우지 않고 목록과 포인트에서 빼요. */
+    public void hide(UUID id) {
+        if (!feedbackRepository.hide(id)) throw new FeedbackNotFoundException();
+    }
+
     /** 내 피드백에는 못 눌러요. 여러 번 불러도 한 번만 세요. 새 개수를 돌려줘요. */
     public long markHelpful(UUID id, UUID userId) {
         Feedback feedback = feedbackRepository.findByIdForShare(id).orElseThrow(FeedbackNotFoundException::new);

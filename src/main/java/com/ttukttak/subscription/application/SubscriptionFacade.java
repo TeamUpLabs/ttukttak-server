@@ -32,16 +32,26 @@ public class SubscriptionFacade {
     // ponytail: 요청 안에서 바로 보내요. SMTP가 느려지면 비동기 큐로 옮겨요.
     public SubscribeResponse subscribe(SubscribeRequest request) {
         try {
-            subscriptionCommandService.subscribe(request.email(), request.topic(), Instant.now()).ifPresent(token ->
-                    subscriptionMailer.sendConfirmation(request.email(),
-                            baseUrl + "/api/v1/subscriptions/confirm?token=" + token,
-                            baseUrl + "/api/v1/subscriptions/unsubscribe?token=" + token));
+            subscriptionCommandService.subscribe(request.email(), request.topic(), Instant.now()).ifPresent(links ->
+                    subscriptionMailer.send(request.email(), "[뚝딱] 주제 공개 알림 신청을 확인해 주세요", """
+                            아래 링크를 누르면 매주 월요일 10:00 새 주제가 공개될 때 메일로 알려드려요.
+
+                            %s
+
+                            신청한 적이 없다면 이 메일은 무시해 주세요.
+                            구독 해지: %s
+                            """.formatted(baseUrl + "/api/v1/subscriptions/confirm?token=" + links.confirmToken(),
+                            unsubscribeUrl(baseUrl, links.unsubscribeToken()))));
         } catch (DataIntegrityViolationException e) {
             // 같은 주소로 동시에 신청하면 늦은 쪽이 고유 제약에 걸려요. 먼저 온 쪽이 메일을 보내요.
         } catch (RuntimeException e) {
             log.error("구독 확인 메일을 보내지 못했어요", e);
         }
         return SubscribeResponse.PENDING;
+    }
+
+    static String unsubscribeUrl(String baseUrl, String token) {
+        return baseUrl + "/api/v1/subscriptions/unsubscribe?token=" + token;
     }
 
     public boolean confirm(String token) {

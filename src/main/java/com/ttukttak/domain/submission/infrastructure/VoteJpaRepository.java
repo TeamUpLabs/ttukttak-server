@@ -30,7 +30,7 @@ interface VoteJpaRepository extends JpaRepository<VoteJpaEntity, VoteJpaEntity.K
             select s.id, s.track, count(v.user_id)
             from submissions s join users u on u.id = s.user_id and u.deleted_at is null
             left join votes v on v.submission_id = s.id
-            where s.week_id = :weekId
+            where s.week_id = :weekId and s.hidden_at is null
             group by s.id
             order by count(v.user_id) desc, s.submitted_at, s.id""", nativeQuery = true)
     List<Object[]> totals(String weekId);
