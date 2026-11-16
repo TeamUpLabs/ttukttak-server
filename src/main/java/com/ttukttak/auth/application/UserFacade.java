@@ -2,7 +2,6 @@ package com.ttukttak.auth.application;
 
 import com.ttukttak.auth.presentation.request.UpdateUserRequest;
 import com.ttukttak.auth.presentation.response.MeResponse;
-import com.ttukttak.auth.presentation.response.UserResponse;
 import com.ttukttak.domain.feedback.application.query.FeedbackQueryService;
 import com.ttukttak.domain.submission.application.query.SubmissionQueryService;
 import com.ttukttak.domain.submission.domain.Submission;
@@ -26,11 +25,6 @@ public class UserFacade {
     private final WeekQueryService weekQueryService;
     private final SubmissionQueryService submissionQueryService;
     private final FeedbackQueryService feedbackQueryService;
-
-    public UserResponse get(String handle) {
-        User user = userQueryService.get(handle);
-        return UserResponse.from(user, submissionQueryService.streak(user.getId(), Instant.now()));
-    }
 
     public MeResponse me(UUID id) {
         return me(userQueryService.get(id));

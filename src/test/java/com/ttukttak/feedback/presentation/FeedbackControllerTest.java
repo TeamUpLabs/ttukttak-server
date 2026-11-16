@@ -54,6 +54,7 @@ class FeedbackControllerTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        jdbc.update("delete from follows");
         jdbc.update("delete from feedback_helpful");
         jdbc.update("delete from feedback");
         jdbc.update("delete from votes");

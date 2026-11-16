@@ -50,6 +50,12 @@ class WeekRepositoryImpl implements WeekRepository {
     }
 
     @Override
+    public List<Week> findOpened(Instant now, int limit) {
+        return jpaRepository.findByOpensAtLessThanEqualOrderByIdDesc(now, Limit.of(limit))
+                .stream().map(WeekJpaEntity::toDomain).toList();
+    }
+
+    @Override
     public List<Week> findOpenedThemes(Instant now) {
         return jpaRepository.findByTypeAndOpensAtLessThanEqualOrderByIdDesc(WeekType.THEME, now)
                 .stream().map(WeekJpaEntity::toDomain).toList();

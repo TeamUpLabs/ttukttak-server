@@ -47,6 +47,7 @@ class WeekControllerTest {
     // 로컬에서 넣어둔 주차가 "이번 주"를 바꾸지 않게 비우고 시작해요 (테스트가 끝나면 롤백).
     @BeforeEach
     void clear() {
+        jdbc.update("delete from follows");
         jdbc.update("delete from feedback_helpful");
         jdbc.update("delete from feedback");
         jdbc.update("delete from votes");

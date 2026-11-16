@@ -1,5 +1,6 @@
 package com.ttukttak.domain.user.application.query;
 
+import com.ttukttak.domain.user.domain.FollowRepository;
 import com.ttukttak.domain.user.domain.User;
 import com.ttukttak.domain.user.domain.UserRepository;
 import com.ttukttak.domain.user.exception.UserNotFoundException;
@@ -16,6 +17,7 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class UserQueryService {
     private final UserRepository userRepository;
+    private final FollowRepository followRepository;
 
     public User get(String handle) {
         return userRepository.findByHandle(handle.toLowerCase()).orElseThrow(UserNotFoundException::new);
@@ -23,6 +25,18 @@ public class UserQueryService {
 
     public User get(UUID id) {
         return userRepository.findById(id).orElseThrow(UserNotFoundException::new);
+    }
+
+    public boolean isFollowing(UUID followerId, UUID followeeId) {
+        return followRepository.isFollowing(followerId, followeeId);
+    }
+
+    public long followers(UUID userId) {
+        return followRepository.countFollowers(userId);
+    }
+
+    public long following(UUID userId) {
+        return followRepository.countFollowing(userId);
     }
 
     /** 탈퇴한 사용자는 빠져요. */

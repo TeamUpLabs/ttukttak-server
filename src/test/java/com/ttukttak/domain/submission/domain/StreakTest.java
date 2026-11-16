@@ -20,13 +20,13 @@ class StreakTest {
         List<Week> themes = List.of(week("w04", 1), week("w03", -6), week("w02", -13), week("w01", -20));
 
         // 이번 주를 아직 안 냈으면 지난주까지
-        assertThat(Streak.of(themes, Set.of("w03", "w02"), NOW)).isEqualTo(new Streak(2, 2));
-        assertThat(Streak.of(themes, Set.of("w04", "w03", "w02"), NOW)).isEqualTo(new Streak(3, 3));
+        assertThat(Streak.of(themes, Set.of("w03", "w02"), NOW)).isEqualTo(new Streak(2, 2, "w02"));
+        assertThat(Streak.of(themes, Set.of("w04", "w03", "w02"), NOW)).isEqualTo(new Streak(3, 3, "w02"));
         // 한 주 빠지면 끊겨요. 최고 기록은 남아요.
-        assertThat(Streak.of(themes, Set.of("w04", "w02", "w01"), NOW)).isEqualTo(new Streak(1, 2));
+        assertThat(Streak.of(themes, Set.of("w04", "w02", "w01"), NOW)).isEqualTo(new Streak(1, 2, "w04"));
         // 마감이 지난 주를 안 냈으면 0
-        assertThat(Streak.of(themes.subList(1, 4), Set.of("w02", "w01"), NOW)).isEqualTo(new Streak(0, 2));
-        assertThat(Streak.of(List.of(), Set.of(), NOW)).isEqualTo(new Streak(0, 0));
+        assertThat(Streak.of(themes.subList(1, 4), Set.of("w02", "w01"), NOW)).isEqualTo(new Streak(0, 2, null));
+        assertThat(Streak.of(List.of(), Set.of(), NOW)).isEqualTo(new Streak(0, 0, null));
     }
 
     /** closesInDays일 뒤(음수면 전)에 제출이 마감되는 주. 3일 제작, 3일 투표. */
