@@ -5,7 +5,9 @@ import org.springframework.http.HttpStatus;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.List;
 import java.util.UUID;
+import java.util.function.IntFunction;
 
 /**
  * 목록 커서. "몇 번째부터:무작위 씨앗"을 base64로 담아요.
@@ -14,6 +16,11 @@ import java.util.UUID;
 // ponytail: offset이라 순서가 바뀌는 중엔 겹치거나 빠질 수 있어요. 문제되면 키셋 커서로.
 public record OffsetCursor(int offset, String seed) {
     private static final int MAX_OFFSET = 1_000_000; // 이보다 뒤는 어차피 비어 있어요. next()가 넘치지 않게 막아요.
+    private static final int MAX_LIMIT = 50;
+
+    /** 한 페이지와 다음 커서. 마지막 페이지면 next는 null이에요. */
+    public record Slice<T>(List<T> items, String next) {
+    }
 
     /** null이면 처음부터, 새 씨앗으로 */
     public static OffsetCursor decode(String cursor) {
@@ -28,7 +35,15 @@ public record OffsetCursor(int offset, String seed) {
         }
     }
 
-    public OffsetCursor next(int size) {
+    /** limit을 1~50으로 맞추고 하나 더 읽어서 다음 페이지가 있는지 봐요. fetch는 이 위치부터 읽을 개수를 받아요. */
+    public <T> Slice<T> slice(int limit, IntFunction<List<T>> fetch) {
+        int size = Math.clamp(limit, 1, MAX_LIMIT);
+        List<T> rows = fetch.apply(size + 1);
+        boolean hasNext = rows.size() > size;
+        return new Slice<>(hasNext ? rows.subList(0, size) : rows, hasNext ? next(size).encode() : null);
+    }
+
+    private OffsetCursor next(int size) {
         return new OffsetCursor(offset + size, seed);
     }
 
