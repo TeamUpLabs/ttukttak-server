@@ -41,6 +41,7 @@ public class SecurityConfig {
                         .requestMatchers("/error", "/swagger-ui/**", "/v3/api-docs/**", AUTH + "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/**", "/api/v1/weeks/**", "/api/v1/submissions/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/weeks/current/presses").permitAll()
+                        .requestMatchers("/api/v1/subscriptions/**").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 // GET /auth/github → GitHub → GET /auth/github/callback → next로 이동
