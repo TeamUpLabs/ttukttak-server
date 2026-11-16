@@ -1,7 +1,9 @@
 package com.ttukttak.domain.user.application.command;
 
+import com.ttukttak.domain.user.domain.FollowRepository;
 import com.ttukttak.domain.user.domain.User;
 import com.ttukttak.domain.user.domain.UserRepository;
+import com.ttukttak.domain.user.exception.SelfFollowException;
 import com.ttukttak.domain.user.exception.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ public class UserCommandService {
     private static final int NAME_MAX = 20;
 
     private final UserRepository userRepository;
+    private final FollowRepository followRepository;
 
     /** GitHub 로그인. 처음이면 GitHub 아이디로 handle과 GitHub 링크를 만들어요(handle이 겹치면 숫자를 붙여요). */
     public User loginWithGithub(Long githubId, String login, String name, String avatarUrl) {
@@ -57,5 +60,24 @@ public class UserCommandService {
         String value = name == null || name.isBlank() ? login : name.strip();
         int length = Math.min(NAME_MAX, value.codePointCount(0, value.length()));
         return value.substring(0, value.offsetByCodePoints(0, length));
+    }
+
+    /** 여러 번 불러도 한 번만 세요. 나 자신은 못 해요. 새 팔로워 수를 돌려줘요. */
+    public long follow(UUID followerId, String handle) {
+        User followee = followee(followerId, handle);
+        followRepository.follow(followerId, followee.getId());
+        return followRepository.countFollowers(followee.getId());
+    }
+
+    public long unfollow(UUID followerId, String handle) {
+        User followee = followee(followerId, handle);
+        followRepository.unfollow(followerId, followee.getId());
+        return followRepository.countFollowers(followee.getId());
+    }
+
+    private User followee(UUID followerId, String handle) {
+        User followee = userRepository.findByHandle(handle.toLowerCase()).orElseThrow(UserNotFoundException::new);
+        if (followee.getId().equals(followerId)) throw new SelfFollowException();
+        return followee;
     }
 }

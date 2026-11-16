@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -74,6 +75,19 @@ interface FeedbackJpaRepository extends JpaRepository<FeedbackJpaEntity, UUID> {
     @Query(value = "select feedback_id from feedback_helpful where user_id = :userId and feedback_id in :feedbackIds",
             nativeQuery = true)
     List<UUID> findHelpful(UUID userId, Collection<UUID> feedbackIds);
+
+    // 제출작 주인이 탈퇴한 건 페이지를 자르기 전에 빼요. 그래야 빈 페이지 뒤에 다음 페이지가 숨지 않아요.
+    @Query(value = """
+            select f.* from feedback f
+            join submissions s on s.id = f.submission_id
+            join users u on u.id = s.user_id and u.deleted_at is null
+            where f.user_id = :userId
+            order by f.created_at desc, f.id
+            offset :offset limit :limit""", nativeQuery = true)
+    List<FeedbackJpaEntity> findPageByUserId(UUID userId, int offset, int limit);
+
+    @Query("select f.createdAt from FeedbackJpaEntity f where f.userId = :userId order by f.createdAt")
+    List<Instant> findCreatedAtByUserId(UUID userId);
 
     // ponytail: 볼 때마다 계산해요. 명세의 point_ledger(원장)는 포인트 규칙이 늘어나면 둬요.
     @Query(value = """

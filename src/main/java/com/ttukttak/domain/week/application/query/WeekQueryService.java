@@ -39,6 +39,16 @@ public class WeekQueryService {
         return weekRepository.findClosedThemes(now, cursor, limit + 1);
     }
 
+    /** 이미 열린 주차(휴식 주 포함), 최신순 */
+    public List<Week> opened(Instant now, int limit) {
+        return weekRepository.findOpened(now, limit);
+    }
+
+    /** 이미 열린 주제 주, 최신순 */
+    public List<Week> openedThemes(Instant now) {
+        return weekRepository.findOpenedThemes(now);
+    }
+
     public Optional<Week> prevTheme(String id) {
         return weekRepository.findPrevTheme(id);
     }

@@ -116,6 +116,17 @@ public class SubmissionFacade {
                 author, submissionQueryService.streak(author.getId(), now).current(), now);
     }
 
+    /** 여러 주차에 걸친 제출작 카드. 순서는 그대로예요. 작성자가 탈퇴한 건 빠져요. */
+    public List<SubmissionCard> cards(List<Submission> submissions, UUID viewerId) {
+        Map<String, List<SubmissionCard>> byWeek = new HashMap<>();
+        submissions.stream().map(Submission::getWeekId).distinct().forEach(weekId -> byWeek.put(weekId,
+                cards(submissions.stream().filter(s -> s.getWeekId().equals(weekId)).toList(),
+                        weekQueryService.get(weekId), viewerId)));
+        Map<UUID, SubmissionCard> byId = byWeek.values().stream().flatMap(List::stream)
+                .collect(Collectors.toMap(SubmissionCard::id, Function.identity()));
+        return submissions.stream().map(s -> byId.get(s.getId())).filter(Objects::nonNull).toList();
+    }
+
     private List<SubmissionCard> cards(List<Submission> submissions, Week week, UUID viewerId) {
         return cards(submissions, week, submissionQueryService.scoreboard(week.getId()), viewerId);
     }

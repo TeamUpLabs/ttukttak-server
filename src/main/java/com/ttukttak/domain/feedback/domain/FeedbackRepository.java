@@ -1,5 +1,6 @@
 package com.ttukttak.domain.feedback.domain;
 
+import java.time.Instant;
 import java.util.*;
 
 public interface FeedbackRepository {
@@ -35,6 +36,12 @@ public interface FeedbackRepository {
 
     /** feedbackIds 중 userId가 도움돼요를 누른 것 */
     Set<UUID> findHelpful(UUID userId, Collection<UUID> feedbackIds);
+
+    /** userId가 남긴 피드백, 최신순. 제출작 주인이 탈퇴한 건 빠져요. */
+    List<Feedback> findPageByUserId(UUID userId, int offset, int limit);
+
+    /** userId가 남긴 피드백 시각, 오래된 순 */
+    List<Instant> findCreatedAtByUserId(UUID userId);
 
     /** 피드백 1개당 10점(주차마다 최대 100점, 포인트가 쌓이는 것만) + 받은 도움돼요 1개당 2점 */
     long points(UUID userId);

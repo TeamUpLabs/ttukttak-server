@@ -7,16 +7,18 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
-/** 연속 제출 주 수. 휴식 주는 끊기지도, 늘지도 않아요. */
-public record Streak(int current, int best) {
+/** 연속 제출 주 수. 휴식 주는 끊기지도, 늘지도 않아요. since: 지금 이어지는 기록의 첫 주(없으면 null) */
+public record Streak(int current, int best, String since) {
 
     /** themes: 이미 열린 주제 주, 최신순. submitted: 제출한 주차 id */
     public static Streak of(List<Week> themes, Set<String> submitted, Instant now) {
         int current = -1, best = 0, run = 0;
+        String since = null;
         for (int i = 0; i < themes.size(); i++) {
             Week week = themes.get(i);
             if (submitted.contains(week.getId())) {
                 best = Math.max(best, ++run);
+                if (current < 0) since = week.getId();
                 continue;
             }
             // 이번 주가 진행 중이고 아직 안 냈으면 지난주까지로 계산해요.
@@ -24,6 +26,6 @@ public record Streak(int current, int best) {
             if (current < 0) current = run;
             run = 0;
         }
-        return new Streak(current < 0 ? run : current, best);
+        return new Streak(current < 0 ? run : current, best, since);
     }
 }
