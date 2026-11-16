@@ -124,6 +124,12 @@ class ProfileControllerTest {
                 .andExpect(jsonPath("$.items[0].submission.author.handle").value("bob"))
                 .andExpect(jsonPath("$.nextCursor").value(not(nullValue())));
 
+        // 제출작 주인이 탈퇴하면 그 피드백은 페이지를 자르기 전에 빠져요.
+        userCommandService.delete(bob.getId());
+        mvc.perform(get("/api/v1/users/alice/feedback").param("limit", "3"))
+                .andExpect(jsonPath("$.items.length()").value(0))
+                .andExpect(jsonPath("$.nextCursor").value(nullValue()));
+
         mvc.perform(get("/api/v1/users/nobody/streak")).andExpect(status().isNotFound());
     }
 

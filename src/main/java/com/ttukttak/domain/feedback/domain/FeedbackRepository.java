@@ -37,7 +37,7 @@ public interface FeedbackRepository {
     /** feedbackIds 중 userId가 도움돼요를 누른 것 */
     Set<UUID> findHelpful(UUID userId, Collection<UUID> feedbackIds);
 
-    /** userId가 남긴 피드백, 최신순 */
+    /** userId가 남긴 피드백, 최신순. 제출작 주인이 탈퇴한 건 빠져요. */
     List<Feedback> findPageByUserId(UUID userId, int offset, int limit);
 
     /** userId가 남긴 피드백 시각, 오래된 순 */
