@@ -32,8 +32,6 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 public class ProfileFacade {
-    private static final int MAX_LIMIT = 50;
-
     private final UserCommandService userCommandService;
     private final UserQueryService userQueryService;
     private final WeekQueryService weekQueryService;
@@ -77,9 +75,10 @@ public class ProfileFacade {
     public ProfileSubmissionListResponse submissions(String handle, String cursor, int limit, UUID viewerId) {
         History history = history(userQueryService.get(handle), Instant.now());
         OffsetCursor at = OffsetCursor.decode(cursor);
-        int size = Math.clamp(limit, 1, MAX_LIMIT);
         List<Submission> all = history.submissions();
-        List<Submission> page = all.subList(Math.min(at.offset(), all.size()), Math.min(at.offset() + size, all.size()));
+        OffsetCursor.Slice<Submission> slice = at.slice(limit,
+                n -> all.subList(Math.min(at.offset(), all.size()), Math.min(at.offset() + n, all.size())));
+        List<Submission> page = slice.items();
         Map<UUID, Submission> byId = page.stream().collect(Collectors.toMap(Submission::getId, Function.identity()));
         List<ProfileSubmissionListResponse.Item> items = new ArrayList<>();
         for (SubmissionCard card : submissionFacade.cards(page, viewerId)) {
@@ -90,23 +89,20 @@ public class ProfileFacade {
                     new ProfileSubmissionListResponse.WeekRef(week.getCode(), week.getTitle()),
                     medal ? new ProfileSubmissionListResponse.Medal(card.track(), history.ranks().get(card.id())) : null));
         }
-        return new ProfileSubmissionListResponse(items, at.offset() + size < all.size() ? at.next(size).encode() : null);
+        return new ProfileSubmissionListResponse(items, slice.next());
     }
 
     public ProfileFeedbackListResponse feedback(String handle, String cursor, int limit) {
         User user = userQueryService.get(handle);
         OffsetCursor at = OffsetCursor.decode(cursor);
-        int size = Math.clamp(limit, 1, MAX_LIMIT);
-        List<Feedback> rows = feedbackQueryService.byUser(user.getId(), at.offset(), size + 1);
-        boolean hasNext = rows.size() > size;
-        List<Feedback> page = hasNext ? rows.subList(0, size) : rows;
+        OffsetCursor.Slice<Feedback> slice = at.slice(limit, n -> feedbackQueryService.byUser(user.getId(), at.offset(), n));
+        List<Feedback> page = slice.items();
 
         Map<UUID, Submission> submissions = submissionQueryService.getAll(
                         page.stream().map(Feedback::getSubmissionId).distinct().toList())
                 .stream().collect(Collectors.toMap(Submission::getId, Function.identity()));
         Map<UUID, User> authors = userQueryService.getAll(
-                        submissions.values().stream().map(Submission::getUserId).distinct().toList())
-                .stream().collect(Collectors.toMap(User::getId, Function.identity()));
+                submissions.values().stream().map(Submission::getUserId).distinct().toList());
         Map<UUID, Long> helpful = feedbackQueryService.helpfulCounts(page.stream().map(Feedback::getId).toList());
         // 쿼리가 이미 걸렀어요. 그 사이에 철회·탈퇴한 것만 남을 수 있어 한 번 더 봐요.
         List<ProfileFeedbackListResponse.Item> items = page.stream()
@@ -120,7 +116,7 @@ public class ProfileFacade {
                                     submission.getContent().title(), UserSummary.from(authors.get(submission.getUserId()))));
                 })
                 .toList();
-        return new ProfileFeedbackListResponse(items, hasNext ? at.next(size).encode() : null);
+        return new ProfileFeedbackListResponse(items, slice.next());
     }
 
     public FollowResponse follow(String handle, UUID followerId) {

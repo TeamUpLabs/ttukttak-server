@@ -32,8 +32,6 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 public class SubmissionFacade {
-    private static final int MAX_LIMIT = 50;
-
     private final SubmissionCommandService submissionCommandService;
     private final SubmissionQueryService submissionQueryService;
     private final WeekQueryService weekQueryService;
@@ -48,13 +46,11 @@ public class SubmissionFacade {
                 : week.phase(Instant.now()) == Phase.BUILDING ? SubmissionSort.RANDOM : SubmissionSort.VOTES;
         // ponytail: 명세는 세션마다 같은 순서지만, 비로그인에 세션을 만들지 않으려고 첫 페이지마다 새로 섞어요.
         OffsetCursor at = OffsetCursor.decode(cursor);
-        int size = Math.clamp(limit, 1, MAX_LIMIT);
-        List<Submission> rows = submissionQueryService.page(weekId, track, exclude, order, at.seed(), at.offset(), size + 1);
-        boolean hasNext = rows.size() > size;
-        List<Submission> page = hasNext ? rows.subList(0, size) : rows;
+        OffsetCursor.Slice<Submission> page = at.slice(limit,
+                n -> submissionQueryService.page(weekId, track, exclude, order, at.seed(), at.offset(), n));
         return new SubmissionListResponse(
-                cards(page, week, viewerId),
-                hasNext ? at.next(size).encode() : null,
+                cards(page.items(), week, viewerId),
+                page.next(),
                 submissionQueryService.count(weekId, track, exclude));
     }
 
@@ -138,8 +134,7 @@ public class SubmissionFacade {
     // 작성자가 탈퇴했으면 빼요.
     private List<SubmissionCard> cards(List<Submission> submissions, Week week, Scoreboard scoreboard, UUID viewerId) {
         List<UUID> ids = submissions.stream().map(Submission::getId).toList();
-        Map<UUID, User> authors = userQueryService.getAll(submissions.stream().map(Submission::getUserId).toList())
-                .stream().collect(Collectors.toMap(User::getId, Function.identity()));
+        Map<UUID, User> authors = userQueryService.getAll(submissions.stream().map(Submission::getUserId).toList());
         Set<UUID> voted = submissionQueryService.voted(viewerId, ids);
         boolean showRank = week.isVotingOver(Instant.now());
         return submissions.stream().filter(s -> authors.containsKey(s.getUserId()))

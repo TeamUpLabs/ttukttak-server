@@ -19,15 +19,11 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /** 요청·응답 DTO와 도메인 사이를 이어줘요. 트랜잭션은 각 서비스가 가져요. */
 @Component
 @RequiredArgsConstructor
 public class FeedbackFacade {
-    private static final int MAX_LIMIT = 50;
-
     private final FeedbackCommandService feedbackCommandService;
     private final FeedbackQueryService feedbackQueryService;
     private final SubmissionQueryService submissionQueryService;
@@ -37,14 +33,10 @@ public class FeedbackFacade {
                                      UUID viewerId) {
         submissionQueryService.get(submissionId); // 없거나 철회했으면 404
         OffsetCursor at = OffsetCursor.decode(cursor);
-        int size = Math.clamp(limit, 1, MAX_LIMIT);
-        List<Feedback> rows = feedbackQueryService.page(submissionId, type, sort == null ? FeedbackSort.HELPFUL : sort,
-                at.offset(), size + 1);
-        boolean hasNext = rows.size() > size;
-        List<Feedback> page = hasNext ? rows.subList(0, size) : rows;
-        return new FeedbackListResponse(items(page, viewerId),
-                FeedbackListResponse.Counts.from(feedbackQueryService.countByType(submissionId)),
-                hasNext ? at.next(size).encode() : null);
+        OffsetCursor.Slice<Feedback> page = at.slice(limit, n -> feedbackQueryService.page(submissionId, type,
+                sort == null ? FeedbackSort.HELPFUL : sort, at.offset(), n));
+        return new FeedbackListResponse(items(page.items(), viewerId),
+                FeedbackListResponse.Counts.from(feedbackQueryService.countByType(submissionId)), page.next());
     }
 
     public CreateFeedbackResponse create(UUID submissionId, UUID userId, CreateFeedbackRequest request) {
@@ -90,8 +82,7 @@ public class FeedbackFacade {
     // 작성자가 탈퇴했으면 빼요.
     private List<FeedbackItem> items(List<Feedback> feedback, UUID viewerId) {
         List<UUID> ids = feedback.stream().map(Feedback::getId).toList();
-        Map<UUID, User> authors = userQueryService.getAll(feedback.stream().map(Feedback::getUserId).toList())
-                .stream().collect(Collectors.toMap(User::getId, Function.identity()));
+        Map<UUID, User> authors = userQueryService.getAll(feedback.stream().map(Feedback::getUserId).toList());
         Map<UUID, Long> helpfulCounts = feedbackQueryService.helpfulCounts(ids);
         Set<UUID> helpful = feedbackQueryService.helpful(viewerId, ids);
         return feedback.stream().filter(f -> authors.containsKey(f.getUserId()))
