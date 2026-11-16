@@ -7,3 +7,9 @@ services:
       - 'POSTGRES_PASSWORD=ttukttak'
     ports:
       - '5432'
+  # 로컬 메일함. 보낸 메일은 http://localhost:8025 에서 봐요.
+  mailpit:
+    image: 'axllent/mailpit:v1.20'
+    ports:
+      - '1025:1025'
+      - '8025:8025'

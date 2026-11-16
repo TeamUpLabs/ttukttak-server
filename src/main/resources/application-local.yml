@@ -2,6 +2,9 @@
 spring:
   config:
     import: optional:file:.env[.properties] # GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET
+  mail: # compose.yaml의 Mailpit
+    host: localhost
+    port: 1025
   docker:
     compose:
       skip:
