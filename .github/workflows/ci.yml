@@ -102,7 +102,13 @@ jobs:
         env:
           SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER_NAME: ${{ secrets.DEPLOY_USER }}
         run: |
+          # 없는 비밀값은 빈 문자열로 들어와요. production 환경에 넣었는지 이름으로 알려줘요.
+          for name in SSH_KEY KNOWN_HOSTS HOST USER_NAME; do
+            [ -n "${!name}" ] || { echo "::error::production 환경 비밀값이 비었어요: $name"; exit 1; }
+          done
           install -m 700 -d ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
