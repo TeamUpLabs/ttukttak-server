@@ -27,6 +27,8 @@ spring:
             redirect-uri: "${app.public-base-url}/api/v1/auth/{registrationId}/callback" # 프론트(Vercel)가 /api를 넘겨줘서 콜백도 프론트 주소로 받아요
 
 server:
+  tomcat:
+    use-relative-redirects: true # Location을 "/submit" 그대로 보내요. 절대 주소로 바꾸면 API 도메인이 붙어요
   servlet:
     session:
       timeout: 14d # ponytail: 메모리 세션이라 재시작하면 다시 로그인. 서버 여러 대면 spring-session-jdbc
