@@ -1,3 +1,9 @@
+{
+	# kro.kr 같은 공유 도메인은 Let's Encrypt 주간 한도(등록 도메인당 50장)에 자주 걸려서 ZeroSSL로 받아요.
+	email {$ACME_EMAIL}
+	acme_ca https://acme.zerossl.com/v2/DV90
+}
+
 {$API_DOMAIN} {
 	reverse_proxy app:8080
 }

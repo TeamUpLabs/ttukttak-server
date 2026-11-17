@@ -266,8 +266,10 @@ docker run -p 8080:8080 \
 1. **인스턴스와 포트:** VCN의 Security List(또는 NSG)에 TCP 80, 443 인바운드를 열어요. Oracle Ubuntu 이미지는 iptables가 따로 막고 있어서 서버에서도 열어요.
 
    ```bash
-   sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
-   sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
+   # REJECT 줄보다 위에 넣어야 해요. 위치는 서버마다 달라요.
+   n=$(sudo iptables -L INPUT --line-numbers | awk '/REJECT/ {print $1; exit}')
+   sudo iptables -I INPUT "$n" -m state --state NEW -p tcp --dport 443 -j ACCEPT
+   sudo iptables -I INPUT "$n" -m state --state NEW -p tcp --dport 80 -j ACCEPT
    sudo netfilter-persistent save
    ```
 

@@ -34,6 +34,7 @@ services:
       - 443:443
     environment:
       API_DOMAIN: ${API_DOMAIN:?.env에 API_DOMAIN을 넣어요}
+      ACME_EMAIL: ${ACME_EMAIL:?.env에 ACME_EMAIL을 넣어요}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
