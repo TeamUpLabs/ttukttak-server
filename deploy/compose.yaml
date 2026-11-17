@@ -1,0 +1,43 @@
+# 운영 서버의 ~/ttukttak/에 CI가 이 파일과 Caddyfile을 복사해요. 비밀값은 같은 폴더의 .env에 둬요.
+services:
+  app:
+    image: ghcr.io/teamuplabs/ttukttak-server:${TAG:-latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/ttukttak
+      DB_USERNAME: ttukttak
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ttukttak
+      POSTGRES_USER: ttukttak
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?.env에 DB_PASSWORD를 넣어요}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U ttukttak
+      interval: 5s
+      retries: 10
+
+  # 80·443을 받아 HTTPS 인증서를 자동으로 붙이고 app으로 넘겨요.
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?.env에 API_DOMAIN을 넣어요}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+
+volumes:
+  pgdata:
+  caddy_data:

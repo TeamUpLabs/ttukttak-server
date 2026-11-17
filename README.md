@@ -241,7 +241,8 @@ src/main/java/com/ttukttak/
 | `ci.yml` | PR, `main` push | `./gradlew build`(테스트·커버리지·jar), 테스트 결과를 PR 체크로, 커버리지 요약 |
 | `codeql.yml` | PR, `main` push, 매주 월요일 | 보안 정적 분석 |
 | `dependency-review.yml` | PR, `main` push | 새 의존성의 알려진 취약점 검사 |
-| `docker.yml` | `main` push에서 CI가 통과하면 | 이미지를 만들어 `ghcr.io/lee-seokmin/ttukttak-server`에 올려요 (커밋 SHA 태그) |
+| `docker.yml` | `main` push에서 CI가 통과하면 | amd64·arm64 이미지를 만들어 `ghcr.io/teamuplabs/ttukttak-server`에 올려요 (커밋 SHA 태그) |
+| `ci.yml`의 `deploy` | 이미지가 올라간 뒤 | SSH로 Oracle 서버에 들어가 새 이미지로 바꿔 띄워요 |
 
 이미지는 CI가 만든 `build/libs/app.jar`만 담아요. 루트 권한 없이 `prod` 프로필로 8080에서 돌아요.
 
@@ -257,6 +258,60 @@ docker run -p 8080:8080 \
 ```
 
 `prod`는 스키마를 검사만 해요(`validate`). 그래서 새 칸이 생긴 버전을 배포하기 전에 운영 DB에 먼저 반영해야 해요.
+
+### 서버 준비 (Oracle Cloud, 한 번만)
+
+서버에는 `deploy/`의 Caddy(HTTPS) → app → Postgres가 Docker Compose로 떠요. Ubuntu 이미지 기준이에요.
+
+1. **인스턴스와 포트:** VCN의 Security List(또는 NSG)에 TCP 80, 443 인바운드를 열어요. Oracle Ubuntu 이미지는 iptables가 따로 막고 있어서 서버에서도 열어요.
+
+   ```bash
+   sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
+   sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
+   sudo netfilter-persistent save
+   ```
+
+2. **DNS:** `API_DOMAIN`(예: `api.ddukddak.dev`)의 A 레코드를 인스턴스 공인 IP로 걸어요. Caddy가 처음 뜰 때 인증서를 받아요.
+
+3. **Docker:**
+
+   ```bash
+   curl -fsSL https://get.docker.com | sudo sh
+   sudo usermod -aG docker $USER   # 다시 로그인해야 적용돼요
+   ```
+
+4. **배포용 SSH 키:** 내 컴퓨터에서 만들고 공개키를 서버에 넣어요.
+
+   ```bash
+   ssh-keygen -t ed25519 -f ttukttak-deploy -N ''
+   ssh-copy-id -i ttukttak-deploy.pub ubuntu@<서버 IP>
+   ssh-keyscan <서버 IP>   # 출력은 DEPLOY_KNOWN_HOSTS에 넣어요
+   ```
+
+5. **비밀값:** 서버에 폴더와 `.env`를 만들어요. 값은 `deploy/.env.example`을 보고 채워요.
+
+   ```bash
+   mkdir ~/ttukttak && cd ~/ttukttak
+   vi .env && chmod 600 .env
+   ```
+
+   GitHub OAuth 앱의 콜백 주소는 `https://<API_DOMAIN>/api/v1/auth/github/callback`이에요.
+
+6. **GitHub 설정:** Settings → Environments에서 `production` 환경을 만들고 비밀값을 넣어요.
+
+   | 이름 | 값 |
+   | --- | --- |
+   | `DEPLOY_HOST` | 서버 공인 IP |
+   | `DEPLOY_USER` | `ubuntu` |
+   | `DEPLOY_SSH_KEY` | `ttukttak-deploy` 개인키 전체 |
+   | `DEPLOY_KNOWN_HOSTS` | `ssh-keyscan` 출력 |
+
+7. **첫 배포:** 빈 DB는 `validate`를 통과하지 못해요. `.env`에 `SPRING_JPA_HIBERNATE_DDL_AUTO=update`를 넣고 `main`에 push(또는 실패한 실행을 다시 실행)해서 테이블을 만든 뒤, 그 줄을 지우고 `docker compose up -d`로 다시 띄워요.
+
+이후엔 `main`에 합칠 때마다 CI가 `compose.yaml`·`Caddyfile`을 복사하고 커밋 SHA 이미지로 바꿔 띄워요.
+
+- 로그: `docker compose logs -f app`
+- 되돌리기: `TAG=sha-<이전 커밋 7자리> docker compose up -d`
 
 ## 운영
 

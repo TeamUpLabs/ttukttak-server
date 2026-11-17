@@ -79,3 +79,43 @@ jobs:
       contents: read
       packages: write # ghcr.io에 이미지 올리기
     uses: ./.github/workflows/docker.yml
+
+  # 이미지가 올라가면 Oracle 서버에서 새 이미지로 바꿔 띄워요. 서버 준비는 README의 "서버 준비"를 봐요.
+  deploy:
+    if: ${{ github.event_name == 'push' }}
+    needs: docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production # 배포 비밀값은 이 환경에만 둬요
+    concurrency:
+      group: deploy
+      cancel-in-progress: false # 배포 중간에 끊지 않아요
+    permissions:
+      contents: read
+      packages: read # 서버가 ghcr.io에서 이미지를 받을 때 쓰는 토큰
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: deploy
+
+      - name: SSH 준비
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      # ponytail: 띄우기만 확인해요. 헬스 체크가 필요하면 actuator를 넣고 docker compose up --wait로 바꿔요.
+      - name: 배포
+        env:
+          TARGET: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          TAG="sha-${GITHUB_SHA::7}" # docker.yml의 type=sha 태그
+          scp deploy/compose.yaml deploy/Caddyfile "$TARGET:ttukttak/"
+          printf '%s' "$TOKEN" | ssh "$TARGET" "docker login ghcr.io -u '$ACTOR' --password-stdin"
+          ssh "$TARGET" "cd ttukttak && export TAG=$TAG && docker compose pull app && docker compose up -d --remove-orphans; s=\$?; docker logout ghcr.io; docker image prune -f; exit \$s"
