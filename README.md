@@ -97,7 +97,7 @@
 | `dev` | 개발 서버 | 환경변수 | `ddl-auto: update` + `db/patch.sql` | 켜짐 | `Secure` |
 | `prod` | 운영 | 환경변수 | `ddl-auto: validate` | 꺼짐 | `Secure` |
 
-`dev`와 `prod`는 https 프록시 뒤에서 돈다고 봐요. `X-Forwarded-*` 헤더로 OAuth callback 주소를 만들어요.
+`dev`와 `prod`는 https 프록시 뒤에서 돈다고 봐요. `X-Forwarded-*` 헤더로 https를 알아봐요. OAuth callback 주소는 `PUBLIC_BASE_URL`로 만들어요.
 
 ### 환경변수
 
@@ -105,7 +105,7 @@
 | --- | --- | --- |
 | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | 모두 | GitHub OAuth App |
 | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | `dev`, `prod` | 예: `jdbc:postgresql://db:5432/ttukttak` |
-| `PUBLIC_BASE_URL` | `dev`, `prod` | 메일 속 링크의 사이트 주소. 기본값 `http://localhost:5173` |
+| `PUBLIC_BASE_URL` | `dev`, `prod` | 사이트(프론트) 주소. 메일 링크와 GitHub OAuth 콜백(`{주소}/api/v1/auth/github/callback`)에 써요. 기본값 `http://localhost:5173` |
 | `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD` | 메일을 보낼 때 | SMTP. 없으면 보내지 않고 경고 로그만 남겨요 |
 | `MAIL_FROM` | 선택 | 보내는 사람. 기본값 `뚝딱 <noreply@ddukddak.dev>` |
 | `SPRING_PROFILES_ACTIVE` | 선택 | 프로필. Docker 이미지는 `prod`로 정해져 있어요 |
